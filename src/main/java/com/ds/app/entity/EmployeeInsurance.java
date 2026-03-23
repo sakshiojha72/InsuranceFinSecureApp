@@ -8,11 +8,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "employee_insurances")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
 @ToString(exclude = {"employee", "insurancePlan"})
 @EqualsAndHashCode(exclude = {"employee", "insurancePlan"})
 public class EmployeeInsurance {

@@ -8,7 +8,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "top_up_plans")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
