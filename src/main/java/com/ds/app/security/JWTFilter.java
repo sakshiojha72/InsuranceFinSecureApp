@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.ds.app.jwtutil.JWTUtil;
-import com.ds.app.service.MyUserDetailService;
+import com.ds.app.service.impl.MyUserDetailService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

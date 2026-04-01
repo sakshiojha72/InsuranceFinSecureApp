@@ -25,5 +25,4 @@ public class CreateTopUpPlanRequestDTO {
 
     private String description;
 
-    private String createdBy; // email of admin creating this
 }

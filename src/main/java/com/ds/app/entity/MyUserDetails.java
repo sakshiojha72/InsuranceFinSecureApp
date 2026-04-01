@@ -2,6 +2,7 @@ package com.ds.app.entity;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,8 +19,7 @@ public class MyUserDetails implements UserDetails{
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		SimpleGrantedAuthority a = new SimpleGrantedAuthority(user.getRole().toString());
-		return Arrays.asList(a);
+	    return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
 	}
 
 	@Override
@@ -51,6 +51,9 @@ public class MyUserDetails implements UserDetails{
 	public boolean isEnabled() {
 		return true;
 	}
-	
+	public AppUser getUser()
+	{
+		return this.user;
+	}
 	
 }

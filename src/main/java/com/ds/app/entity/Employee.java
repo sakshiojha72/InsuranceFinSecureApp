@@ -8,12 +8,13 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Employee {
+@PrimaryKeyJoinColumn(name="user_id")
+public class Employee extends AppUser {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
+	private String firstName;
+	private String lastName;
+	
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     private List<EmployeeInsurance> insurances;
 
@@ -22,4 +23,5 @@ public class Employee {
 
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     private List<InsuranceClaim> insuranceClaims;
+    
 }

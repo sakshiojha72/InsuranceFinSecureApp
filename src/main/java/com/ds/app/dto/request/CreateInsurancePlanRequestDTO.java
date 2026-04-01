@@ -21,5 +21,4 @@ public class CreateInsurancePlanRequestDTO {
 
     private String description;
 
-    private String createdBy; 
 }

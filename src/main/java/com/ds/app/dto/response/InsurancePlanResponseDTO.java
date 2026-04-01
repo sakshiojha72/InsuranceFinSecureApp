@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InsurancePlanResponseDTO {
 
-    private Long id;
+    private Long planId;
     private String planName;
     private Double coverageAmount;
     private String description;

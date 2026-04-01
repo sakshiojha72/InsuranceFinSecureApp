@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TopUpPlanResponseDTO {
 
-    private Long id;
+    private Long topUpPlanId;
     private String topUpName;
     private Double additionalCoverage;
     private Double price;
