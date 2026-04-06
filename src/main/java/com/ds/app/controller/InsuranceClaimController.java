@@ -84,15 +84,18 @@ public class InsuranceClaimController {
         return ResponseEntity.ok(claims);
     }
 
-    // only ADMIN can approve or reject a claim
+ // only ADMIN can approve or reject a claim
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/status")
     public ResponseEntity<ClaimResponseDTO> updateClaimStatus(
-            @Valid @RequestBody ClaimStatusUpdateDTO dto) {
+            @Valid @RequestBody ClaimStatusUpdateDTO dto,
+            Principal principal) {
+
+        // get the logged in admin's username from JWT and set it on the dto
+        dto.setResolvedBy(principal.getName());
 
         ClaimResponseDTO response =
             insuranceClaimService.updateClaimStatus(dto);
-
         return ResponseEntity.ok(response);
     }
 }

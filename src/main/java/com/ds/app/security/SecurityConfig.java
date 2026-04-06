@@ -35,6 +35,11 @@ public class SecurityConfig{
 		 http.cors(cors->cors.disable());
 		 
 		 http.authorizeHttpRequests(auth -> auth
+				    .requestMatchers(
+				    	    "/swagger-ui/**",
+				    	    "/swagger-ui.html",
+				    	    "/v3/api-docs/**"
+				    	).permitAll()
 				    .requestMatchers("/finsecure/public/**").permitAll()
 				    .requestMatchers("/finsecure/admin/**").hasRole("ADMIN")
 				    .requestMatchers("/finsecure/hr/**").hasRole("HR")
