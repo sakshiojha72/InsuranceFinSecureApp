@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class EscalationRequestDTO {
 	@NotNull(message="Target Employee user ID is required")
-    private Integer targetEmployeeUserId;  // userId of the employee being escalated
+    private Long targetEmployeeUserId;  // userId of the employee being escalated
 	
 	@NotNull(message="comment is required")
 	@Size(min=2,max=500,message="Comment must be between 2 to 500 characters ")

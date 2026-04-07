@@ -11,7 +11,7 @@ import lombok.Data;
 public class AppraisalRequestDTO {
 
 	@NotNull(message="Employee user ID is required")
-    private Integer employeeUserId;  // userId of the employee being appraised
+    private Long employeeUserId;  // userId of the employee being appraised
 
 	@NotNull(message = "Revised Salary is Required")
 	@Positive(message = "Salary must be greater than zero")

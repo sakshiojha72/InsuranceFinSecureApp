@@ -20,6 +20,7 @@ public class AllocationHistory {
 
    
     private Long employeeId;
+    private String employeeName;
     private Long companyId;
     private Long departmentId;  // nullable
     private Long projectId;     // nullable
@@ -29,4 +30,5 @@ public class AllocationHistory {
 
     private LocalDateTime actionAt = LocalDateTime.now();
     private Long performedById;         // HR or Admin userId
+    private String performerName;
 }

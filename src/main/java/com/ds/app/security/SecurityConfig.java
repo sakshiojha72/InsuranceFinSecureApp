@@ -15,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.ds.app.service.MyUserDetailService;
+import com.ds.app.service.MyUserDetailServiceImpl;
 
 @Configuration
 @EnableWebSecurity
@@ -23,7 +23,7 @@ import com.ds.app.service.MyUserDetailService;
 public class SecurityConfig{
 
 	@Autowired
-	private MyUserDetailService userDetailsService;
+	private MyUserDetailServiceImpl userDetailsService;
 	
 	@Autowired
 	JWTFilter jwtFilter;
@@ -35,12 +35,20 @@ public class SecurityConfig{
 		 http.cors(cors->cors.disable());
 		 
 	        http.authorizeHttpRequests(auth -> auth
+	        		
+	        		 .requestMatchers(
+	        	                "/v3/api-docs/**",
+	        	                "/swagger-ui/**",
+	        	                "/swagger-ui/index.html"
+	        	            ).permitAll()
+	        		
 	                .requestMatchers("/finsecure/public/**").permitAll()
-	                .requestMatchers("/finsecure/admin/**").hasAuthority("Admin")
-	                .requestMatchers("/finsecure/hr/**").hasAuthority("HR")
-	                .requestMatchers("/finsecure/finance/**").hasAuthority("Finance")
-	                .requestMatchers("/finsecure/system/**").hasAuthority("System")
-	                .requestMatchers("/finsecure/employee/**").hasAuthority("Employee")
+	                .requestMatchers("/finsecure/admin/**").hasAuthority("ADMIN")
+	                .requestMatchers("/finsecure/hr/**").hasAnyAuthority("HR","ADMIN","MANAGER","EMPLOYEE")
+	                //if any other role then 403 forbidden immediately
+	                .requestMatchers("/finsecure/finance/**").hasAuthority("FINANCE")
+	                .requestMatchers("/finsecure/system/**").hasAuthority("SYSTEM")
+	                .requestMatchers("/finsecure/employee/**").hasAuthority("EMPLOYEE")
 	        );
 
 	        http.sessionManagement(session ->

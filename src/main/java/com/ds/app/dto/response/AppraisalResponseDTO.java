@@ -12,9 +12,9 @@ public class AppraisalResponseDTO {
 
     private Long id;
 
-    private Integer employeeUserId;    // who was appraised
+    private Long employeeUserId;    // who was appraised
 
-    private Integer initiatedByHrUserId; // which HR did it
+    private Long initiatedByHrUserId; // which HR did it
 
     private Double previousSalary;
 

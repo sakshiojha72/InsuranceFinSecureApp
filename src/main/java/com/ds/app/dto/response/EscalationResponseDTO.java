@@ -14,13 +14,17 @@ public class EscalationResponseDTO {
     private Long id;
 
     // plain IDs — who raised and who is targeted
-    private Integer raisedByUserId;
-    private Integer targetEmployeeUserId;
+    private Long raisedByUserId;
+    private Long targetEmployeeUserId;
 
     // snapshot context
     private Long departmentId;
     private Long companyId;
-
+    
+    
+    private String raisedByName; 
+    private String targetEmployeeName;
+    
     private String comment;
 
     private EscalationStatus status;

@@ -1,6 +1,9 @@
 package com.ds.app.dto.response;
 
-import com.ds.app.enums.EmployeeType;
+import com.ds.app.enums.CertificationStatus;
+import com.ds.app.enums.EmployeeExperience;
+import com.ds.app.enums.Status;
+
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -10,13 +13,15 @@ import java.time.LocalDate;
 public class EmployeeResponseDTO {
 
     // from AppUser
-    private Integer userId;
+    private Long userId;
     private String username;
     private String role;
 
     // HR fields
     private String employeeCode;
-    private EmployeeType employeeType;
+    private EmployeeExperience employeeExperience;
+    
+    private CertificationStatus certificationStatus;
 
     // plain IDs — caller can fetch details separately if needed
     private Long companyId;
@@ -26,8 +31,8 @@ public class EmployeeResponseDTO {
     private Boolean isCertified;
     private Boolean isEscalated;
 
-    private Double salary;
+    private Double currentSalary;
     private LocalDate joiningDate;
-    private String status;
+    private Status status;
 }
 

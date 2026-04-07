@@ -1,6 +1,8 @@
 package com.ds.app.entity;
 
-import com.ds.app.enums.EmployeeType;
+import com.ds.app.enums.CertificationStatus;
+import com.ds.app.enums.EmployeeExperience;
+import com.ds.app.enums.Status;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -19,9 +21,14 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 public class Employee extends AppUser {
+	
+	
 
 
-    private String employeeCode;        // human-readable e.g. EMP-042
+    private String employeeCode;  
+    private String firstName;
+    private String lastName;
+    private String email;
 
    
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,20 +48,36 @@ public class Employee extends AppUser {
     @JsonIgnoreProperties({"assignedEmployees", "company", "department",
                             "hibernateLazyInitializer", "handler"})
     private Project project;
+    
+    
 
     @Enumerated(EnumType.STRING)
-    private EmployeeType employeeType;  // FRESHER / EXPERIENCED / CERTIFIED
+    private EmployeeExperience employeeExperience;  // FRESHER / EXPERIENCED 
+    
+    
+    
+    @Enumerated(EnumType.STRING)
+    private CertificationStatus certificationStatus;
+    
+    
+  
+    private Boolean isEscalated = Boolean.FALSE;  
 
-    private Boolean isCertified = false;
-    private Boolean isEscalated = false;
-
-    private Double salary = 0.0;
+    
+    private Double currentSalary = 0.0;
     private LocalDate joiningDate;
 
-    private String status = "ACTIVE";   // ACTIVE / INACTIVE / TERMINATED
-    private Boolean isDeleted = false;
+    
+    
+    @Enumerated(EnumType.STRING)
+    private Status status=Status.ACTIVE;   // ACTIVE / INACTIVE / TERMINATED
+    
+    
+    
+    
+    private Boolean isDeleted = Boolean.FALSE;
 
-    // ── @OneToMany back-references ─────────────────────────────────────
+    //  @OneToMany back-references 
     // cascade = MERGE only —  using ALL (would delete escalations if employee deleted)
     // @JsonIgnore stops loop: Employee → Escalation.targetEmployee → Employee → ...
     
@@ -71,7 +94,7 @@ public class Employee extends AppUser {
     
     
 
-    // ── convenience getters — read plain IDs without loading the object
+    // convenience getters read plain IDs without loading the object
     public Long getCompanyId()    { return company    != null ? company.getId()    : null; }
     public Long getDepartmentId() { return department != null ? department.getId() : null; }
     public Long getProjectId()    { return project    != null ? project.getId()    : null; }

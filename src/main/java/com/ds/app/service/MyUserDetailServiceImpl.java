@@ -11,7 +11,7 @@ import com.ds.app.entity.MyUserDetails;
 import com.ds.app.repository.iAppUserRepository;
 
 @Service
-public class MyUserDetailService implements UserDetailsService {
+public class MyUserDetailServiceImpl implements UserDetailsService {
 
 	
 	@Autowired

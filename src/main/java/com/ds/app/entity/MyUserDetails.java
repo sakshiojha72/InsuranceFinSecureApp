@@ -15,10 +15,15 @@ public class MyUserDetails implements UserDetails{
 		super();
 		this.user = user;
 	}
+	public AppUser getUser()
+	{
+		return this.user;
+	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		SimpleGrantedAuthority a = new SimpleGrantedAuthority(user.getRole().toString());
+
 		return Arrays.asList(a);
 	}
 

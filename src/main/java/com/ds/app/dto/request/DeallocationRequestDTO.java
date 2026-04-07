@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class DeallocationRequestDTO {
 	@NotNull(message="Employee user ID is required")
-    private Integer employeeUserId;  // userId of the employee to deallocate
+    private Long employeeUserId;  // userId of the employee to deallocate
 
     // What to remove:
     // PROJECT    → sets project = null only

@@ -1,0 +1,254 @@
+
+
+ROLES description:
+HR — Full access: create, read, update, delete on all resources
+Admin — View only: can read all resources but cannot create, update or allocate
+Employee — Limited: can view own profile, own salary, and own escalation flag + comment
+Manager — Can raise escalations within same company and department only
+
+--------------------------------------------------------------
+COMPANY
+
+POST   /finsecure/hr/company
+Create a new client company
+HR only
+
+
+GET
+/finsecure/hr/company
+Get all companies
+HR, Admin
+
+
+GET
+/finsecure/hr/company/{id}
+Get company by ID
+HR, Admin
+
+
+PUT
+/finsecure/hr/company/{id}
+Update company details
+HR only
+-----------------------------------------------------------------------
+
+DEPARTMENT
+
+POST
+/finsecure/hr/department
+Create a new department
+HR only
+
+GET
+/finsecure/hr/department
+Get all departments
+HR, Admin
+
+GET
+/finsecure/hr/department/{id}
+Get department by ID
+HR, Admin
+
+GET
+/finsecure/hr/department/company/{companyId}
+Get all departments under a specific company
+HR, Admin
+
+PUT
+/finsecure/hr/department/{id}
+Update department details
+HR only
+
+-----------------------------------------------------------------------------
+
+PROJECT
+
+POST
+/finsecure/hr/project
+Create a new project
+HR only
+
+GET
+/finsecure/hr/project
+Get all projects
+HR, Admin
+
+GET
+/finsecure/hr/project/{id}
+Get project by ID
+HR, Admin
+
+GET
+/finsecure/hr/project/company/{companyId}
+Get all projects under a specific company
+HR, Admin
+
+PUT
+/finsecure/hr/project/{id}
+Update project details
+HR only
+
+EMPLOYEE
+GET
+/finsecure/hr/employees  [?page=0&size=10]
+Get all employees — paginated
+HR, Admin
+
+
+GET
+/finsecure/hr/employees/{userId}
+Get employee profile by userId
+HR, Admin, Employee
+
+
+GET
+/finsecure/hr/employees/{userId}/salary
+Get employee salary only — after appraisal
+HR, Admin, Employee
+
+
+PUT
+/finsecure/hr/employees/{userId}
+Update employee profile fields
+HR only
+
+
+DELETE
+/finsecure/hr/employees/{userId}
+Soft delete employee (isDeleted = true)
+HR, Admin
+
+
+GET
+/finsecure/hr/employees/company/{id}  [paged]
+Filter employees by company — paginated
+HR, Admin
+
+
+GET
+/finsecure/hr/employees/department/{id}  [paged]
+Filter employees by department — paginated
+HR, Admin
+
+
+GET
+/finsecure/hr/employees/project/{id}  [paged]
+Filter employees by project — paginated
+HR, Admin
+
+
+GET
+/finsecure/hr/employees/unassigned  [paged]
+Employees with no project assigned — paginated
+HR, Admin
+
+--------------------------------------------------------------------------------
+ALLOCATION
+
+POST
+/finsecure/hr/allocate
+Assign employee. Checks Training, Timesheet, Assets.
+HR only
+
+
+POST
+/finsecure/hr/deallocate
+Remove from project/dept/company (type in body)
+HR only
+
+
+GET
+/finsecure/hr/history/{employeeUserId}
+Full allocation timeline for an employee
+HR, Admin
+
+------------------------------------------------------------------------------------
+ESCALATION
+
+
+POST
+/finsecure/hr/escalation
+Raise escalation. Manager: same dept+company only.
+HR, Admin, Manager
+
+
+GET
+/finsecure/hr/escalation  [?page=0&size=10]
+Get all escalations — paginated
+HR, Admin
+
+
+GET
+/finsecure/hr/escalation/employee/{id}  [paged]
+Get escalations for employee. Role-based response.
+HR, Admin, Employee
+
+
+PUT
+/finsecure/hr/escalation/{id}/status
+Update status: OPEN → IN_PROGRESS → RESOLVED
+HR, Admin
+
+--------------------------------------------------------
+APPRAISAL
+
+
+POST
+/finsecure/hr/appraisal
+HR initiates appraisal. Dual write in @Transactional.
+HR only
+
+
+GET
+/finsecure/hr/appraisal/employee/{id}  [paged]
+Full appraisal history for an employee — paginated
+HR, Admin
+
+---------------------------------------------------------------------
+REPORTS
+
+GET
+/finsecure/hr/reports/summary
+Total counts: employees, escalated, non-certified
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/group/company
+Employee count per company: { ICICI: 12, Citi: 8 }
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/group/department
+Employee count per department: { Risk: 5, Tech: 10 }
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/group/type
+Employee count per type: { FRESHER: 20, CERTIFIED: 8 }
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/group/status
+Employee count per status: { ACTIVE: 40, INACTIVE: 3 }
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/count/company/{id}
+Count employees in a specific company
+HR, Admin
+
+
+GET
+/finsecure/hr/reports/count/department/{id}
+Count employees in a specific department
+HR, Admin
+
+
+
+
+

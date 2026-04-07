@@ -20,8 +20,9 @@ import lombok.NoArgsConstructor;
 public class AppUser {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer userId;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long userId;
+	
 	private String username;
 	private String password;
 	

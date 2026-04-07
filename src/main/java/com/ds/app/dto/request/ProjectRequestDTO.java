@@ -4,6 +4,8 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
+import com.ds.app.enums.Status;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -26,8 +28,7 @@ public class ProjectRequestDTO {
     private Long departmentId;
 
 
-    @Pattern(regexp = "ACTIVE|COMPLETED|ON_HOLD",
-             message = "Status must be ACTIVE, COMPLETED or ON_HOLD")
+    
     private String status;
 
 
