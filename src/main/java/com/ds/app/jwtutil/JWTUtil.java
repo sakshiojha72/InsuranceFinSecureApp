@@ -13,6 +13,9 @@ import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JWTUtil {
+	// Remove when project is done
+	private long expirationTime = 604800000; 
+
 
     private final String SECRET_KEY = "descartesdescartesdescartes12345";
     
@@ -47,7 +50,12 @@ public class JWTUtil {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
+<<<<<<< HEAD
                 .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000))
+=======
+               // .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))//REmove when project done
+>>>>>>> 7289d7ba89146c2d04f97485d8104964269482a7
                 .signWith(key)
                 .compact();
     }

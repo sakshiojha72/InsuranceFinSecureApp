@@ -1,5 +1,9 @@
 package com.ds.app.entity;
 
 public enum UserRole {
+<<<<<<< HEAD
  HR,EMPLOYEE,FINANCE,ADMIN,SYSTEM;
+=======
+ HR,EMPLOYEE,MANAGER,FINANCE,ADMIN,SYSTEM;
+>>>>>>> 7289d7ba89146c2d04f97485d8104964269482a7
 }

@@ -24,6 +24,10 @@ public class AppUser {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long userId;
+<<<<<<< HEAD
+=======
+	
+>>>>>>> 7289d7ba89146c2d04f97485d8104964269482a7
 	private String username;
 	private String password;
 	

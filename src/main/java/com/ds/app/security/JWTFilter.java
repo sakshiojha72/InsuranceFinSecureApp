@@ -11,7 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.ds.app.jwtutil.JWTUtil;
+<<<<<<< HEAD
 import com.ds.app.service.impl.MyUserDetailService;
+=======
+import com.ds.app.service.MyUserDetailServiceImpl;
+>>>>>>> 7289d7ba89146c2d04f97485d8104964269482a7
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,7 +29,7 @@ public class JWTFilter extends OncePerRequestFilter {
     private JWTUtil jwtUtil;
 
     @Autowired
-    private MyUserDetailService service;
+    private MyUserDetailServiceImpl service;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,

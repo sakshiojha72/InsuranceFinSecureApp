@@ -16,10 +16,20 @@ public class MyUserDetails implements UserDetails{
 		super();
 		this.user = user;
 	}
+	public AppUser getUser()
+	{
+		return this.user;
+	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
+<<<<<<< HEAD
 	    return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+=======
+		SimpleGrantedAuthority a = new SimpleGrantedAuthority(user.getRole().toString());
+
+		return Arrays.asList(a);
+>>>>>>> 7289d7ba89146c2d04f97485d8104964269482a7
 	}
 
 	@Override
