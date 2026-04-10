@@ -17,18 +17,18 @@ import com.ds.app.entity.ClaimStatus;
 public interface InsurancePlanService {
 		
 	//admin creates new base plan 
-	InsurancePlanResponseDTO createInsurancePlan(CreateInsurancePlanRequestDTO dto, String createdBy);
+	public InsurancePlanResponseDTO createInsurancePlan(CreateInsurancePlanRequestDTO dto, String createdBy);
 
 	//get all active plans (pagination)
-	List<InsurancePlanResponseDTO> getAllInsurancePlans();
+	public List<InsurancePlanResponseDTO> getAllInsurancePlans();
 	
 	//admin can soft delete a plan ( will set isActive-F)
-	void deactivateInsurancePlan(Long planId);
+	public void deactivateInsurancePlan(Long planId);
 	
 	//admin assign plan to employee
-	EmployeeInsuranceResponseDTO assignInsurance(AssignInsuranceRequestDTO dto);
+	public EmployeeInsuranceResponseDTO assignInsurance(AssignInsuranceRequestDTO dto);
 	
-	EmployeeInsuranceResponseDTO getEmployeeInsurance(Long employeeId);
+	public EmployeeInsuranceResponseDTO getEmployeeInsurance(Long employeeId);
 	
 	
 	

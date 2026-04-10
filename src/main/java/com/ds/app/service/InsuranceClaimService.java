@@ -9,16 +9,14 @@ import com.ds.app.entity.ClaimStatus;
 
 public interface InsuranceClaimService {
     // employee raises a claim against their active insurance
-    ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId);
+   public ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId);
 
     // admin views all claims
-    List<ClaimResponseDTO> getAllClaims(ClaimStatus status);
+    public List<ClaimResponseDTO> getAllClaims(ClaimStatus status);
 
     // employee views their own claim history
-    List<ClaimResponseDTO> getEmployeeClaims(Long employeeId);
+    public List<ClaimResponseDTO> getEmployeeClaims(Long employeeId);
 
     // admin approves or rejects a claim
-    ClaimResponseDTO updateClaimStatus(ClaimStatusUpdateDTO dto);
-
-
+    public ClaimResponseDTO updateClaimStatus(ClaimStatusUpdateDTO dto,String resolvedByUsername);
 }

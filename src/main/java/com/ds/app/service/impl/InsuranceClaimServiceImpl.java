@@ -2,7 +2,7 @@ package com.ds.app.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,10 @@ import com.ds.app.entity.Employee;
 import com.ds.app.entity.EmployeeInsurance;
 import com.ds.app.entity.InsuranceClaim;
 import com.ds.app.entity.InsuranceStatus;
+import com.ds.app.exception.ClaimAlreadyProcessedException;
+import com.ds.app.exception.EmployeeNotFoundException;
+import com.ds.app.exception.EmployeeInsuranceNotFoundException;
+import com.ds.app.exception.InsufficientCoverageException;
 import com.ds.app.repository.EmployeeInsuranceRepository;
 import com.ds.app.repository.EmployeeRepository;
 import com.ds.app.repository.InsuranceClaimRepository;
@@ -23,115 +27,183 @@ import com.ds.app.service.InsuranceClaimService;
 @Service
 public class InsuranceClaimServiceImpl implements InsuranceClaimService {
 
-	@Autowired
-	private InsuranceClaimRepository insuranceClaimRepository;
-	
-	@Autowired
-	private EmployeeRepository employeeRepository;
-	
-	@Autowired
-	private EmployeeInsuranceRepository employeeInsuranceRepository;
-	
-	@Override
-	public ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId) {
+    @Autowired
+    private InsuranceClaimRepository insuranceClaimRepository;
 
-		//1. emp must exist 
-		Employee employee= employeeRepository.findById(employeeId)
-				.orElseThrow(()->new RuntimeException
-						("Employee not found"));
-		
-		//2. insurance record must exist 
-		EmployeeInsurance insurance = employeeInsuranceRepository.findById(
-				dto.getEmployeeInsuranceId())
-				.orElseThrow(()->new RuntimeException(
-						"Insurance record for the employee not found"));
-		//3. insurance must be ACTIVE
-		//can't raise claim on expires insurance
-		
-		if(insurance.getStatus()==InsuranceStatus.EXPIRED)
-		{
-			throw new RuntimeException(
-					"Cannot raise a clain on an expired insurance");
-		}
-		//4. employee cannot have two open claims simultaneously
-		if(insuranceClaimRepository.existsByEmployee_UserIdAndStatus(employeeId, ClaimStatus.PENDING)
-				) {
-			throw new RuntimeException(
-					"You already have a pending claim. Resolve it before raising a new one");
-		}
-		
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private EmployeeInsuranceRepository employeeInsuranceRepository;
+
+    // ─── RAISE CLAIM ──────────────────────────────────────────────────────────
+
+    @Override
+    public ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId) {
+
+        Employee employee = employeeRepository.findById(employeeId)
+            .orElseThrow(() -> new EmployeeNotFoundException(employeeId));
+
+        EmployeeInsurance insurance = employeeInsuranceRepository
+            .findById(dto.getEmployeeInsuranceId())
+            .orElseThrow(() -> new EmployeeInsuranceNotFoundException(
+                dto.getEmployeeInsuranceId()));
+
+        if (!insurance.getEmployee().getUserId().equals(employeeId)) {
+            throw new RuntimeException(
+                "You can only raise claims on your own insurance");
+        }
+
+        if (insurance.getStatus() == InsuranceStatus.EXPIRED) {
+            throw new RuntimeException(
+                "Cannot raise a claim on an expired insurance policy");
+        }
+
+        if (insurance.getExpiryDate() != null &&
+                insurance.getExpiryDate().isBefore(
+                    java.time.LocalDate.now())) {
+            // auto-mark as expired and save
+            insurance.setStatus(InsuranceStatus.EXPIRED);
+            employeeInsuranceRepository.save(insurance);
+            throw new RuntimeException(
+                "Your insurance policy has expired (expiry date: "
+                + insurance.getExpiryDate() + "). Please contact HR.");
+        }
+
+        if (insuranceClaimRepository.existsByEmployee_UserIdAndStatus(
+                employeeId, ClaimStatus.PENDING)) {
+            throw new RuntimeException(
+                "You already have a pending claim. "
+                + "Wait for it to be resolved before raising a new one.");
+        }
+
+        //    claim amount must NOT exceed remaining coverage
+        if (dto.getClaimAmount() <= 0) {
+            throw new RuntimeException(
+                "Claim amount must be greater than zero");
+        }
+
+        if (dto.getClaimAmount() > insurance.getRemainingCoverage()) {
+            throw new InsufficientCoverageException(
+                dto.getClaimAmount(), insurance.getRemainingCoverage());
+        }
+
+        // create the claim ─────────────────────────────
         InsuranceClaim claim = new InsuranceClaim();
         claim.setEmployee(employee);
         claim.setEmployeeInsurance(insurance);
         claim.setClaimAmount(dto.getClaimAmount());
         claim.setReason(dto.getReason());
-        claim.setStatus(ClaimStatus.PENDING); 
-        claim.setRaisedAt(LocalDateTime.now()); 
-
-        InsuranceClaim saved = insuranceClaimRepository.save(claim);
-        return mapToClaimResponse(saved);
-
-	}
-
-	@Override
-	public List<ClaimResponseDTO> getEmployeeClaims(Long employeeId) {
-
-	    return insuranceClaimRepository
-	            .findByEmployee_UserId(employeeId)
-	            .stream()
-	            .map(claim -> mapToClaimResponse(claim))
-	            .collect(Collectors.toList());
-	}		
-
-
-	@Override
-	public ClaimResponseDTO updateClaimStatus(ClaimStatusUpdateDTO dto) {
-	    // claim must exist
-        InsuranceClaim claim = insuranceClaimRepository
-                .findById(dto.getClaimId())
-                .orElseThrow(() -> new RuntimeException(
-                    "Claim not found with id: " + dto.getClaimId()
-                ));
-
-        // 1: only PENDING claims can be approved or rejected
-        if (claim.getStatus() != ClaimStatus.PENDING) {
-            throw new RuntimeException(
-                "Only PENDING claims can be approved or rejected"
-            );
-        }
-
-        // RULE 2: status can only move forward
-        if (dto.getStatus() == ClaimStatus.PENDING) {
-            throw new RuntimeException(
-                "Cannot set claim status back to PENDING"
-            );
-        }
-
-        // update claim with admin decision
-        claim.setStatus(dto.getStatus());
-        claim.setAdminRemarks(dto.getAdminRemarks()); // mandatory — audit trail
-        claim.setResolvedBy(dto.getResolvedBy());     // which admin resolved
-        claim.setResolvedAt(LocalDateTime.now());      // timestamp of resolution
+        claim.setStatus(ClaimStatus.PENDING);
+        claim.setRaisedAt(LocalDateTime.now());
 
         InsuranceClaim saved = insuranceClaimRepository.save(claim);
         return mapToClaimResponse(saved);
     }
 
-	
+    // ─── UPDATE CLAIM STATUS (HR/ADMIN) ───────────────────────────────────────
 
-    // MAPPERS
+    @Override
+    public ClaimResponseDTO updateClaimStatus(
+            ClaimStatusUpdateDTO dto, String resolvedByUsername) {
+
+        InsuranceClaim claim = insuranceClaimRepository
+            .findById(dto.getClaimId())
+            .orElseThrow(() -> new RuntimeException(
+                "Claim not found with id: " + dto.getClaimId()));
+
+        // RULE 1: only PENDING claims can be approved or rejected
+        if (claim.getStatus() != ClaimStatus.PENDING) {
+            throw new ClaimAlreadyProcessedException(dto.getClaimId());
+        }
+
+        // RULE 2: status must move forward — can't set back to PENDING
+        if (dto.getStatus() == ClaimStatus.PENDING) {
+            throw new RuntimeException(
+                "Cannot set claim status back to PENDING");
+        }
+
+        // RULE 3: admin remarks are mandatory 
+        if (dto.getAdminRemarks() == null ||
+                dto.getAdminRemarks().trim().isEmpty()) {
+            throw new RuntimeException(
+                "Admin remarks are mandatory when resolving a claim");
+        }
+
+        claim.setStatus(dto.getStatus());
+        claim.setAdminRemarks(dto.getAdminRemarks());
+        claim.setResolvedAt(LocalDateTime.now());
+
+        claim.setResolvedBy(resolvedByUsername);
+
+        //    business rule:
+        //    remainingCoverage = coverageAmount + topUpCoverage - approvedClaimsTotal
+        if (dto.getStatus() == ClaimStatus.APPROVED) {
+
+            EmployeeInsurance insurance = claim.getEmployeeInsurance();
+            double newRemaining =
+                insurance.getRemainingCoverage() - claim.getClaimAmount();
+
+            if (newRemaining < 0) {
+                newRemaining = 0;
+            }
+
+            insurance.setRemainingCoverage(newRemaining);
+            employeeInsuranceRepository.save(insurance);
+        }
+
+        InsuranceClaim saved = insuranceClaimRepository.save(claim);
+        return mapToClaimResponse(saved);
+    }
+
+    // ─── GET CLAIMS BY EMPLOYEE ───────────────────────────────────────────────
+
+    @Override
+    public List<ClaimResponseDTO> getEmployeeClaims(Long employeeId) {
+
+        List<InsuranceClaim> claims =
+            insuranceClaimRepository.findByEmployee_UserId(employeeId);
+        List<ClaimResponseDTO> result = new ArrayList<>();
+
+        for (InsuranceClaim claim : claims) {
+            result.add(mapToClaimResponse(claim));
+        }
+        return result;
+    }
+
+    // ─── GET ALL CLAIMS (ADMIN/HR) ─────────────────────────────────────────────
+
+    @Override
+    public List<ClaimResponseDTO> getAllClaims(ClaimStatus status) {
+
+        List<InsuranceClaim> claims;
+
+        if (status != null) {
+            claims = insuranceClaimRepository.findByStatus(status);
+        } else {
+            claims = insuranceClaimRepository.findAll();
+        }
+
+        List<ClaimResponseDTO> result = new ArrayList<>();
+        for (InsuranceClaim claim : claims) {
+            result.add(mapToClaimResponse(claim));
+        }
+        return result;
+    }
+
+    // ─── MAPPER ───────────────────────────────────────────────────────────────
 
     private ClaimResponseDTO mapToClaimResponse(InsuranceClaim claim) {
         ClaimResponseDTO dto = new ClaimResponseDTO();
         dto.setClaimId(claim.getId());
         dto.setEmployeeId(claim.getEmployee().getUserId());
-        dto.setEmployeeName(claim.getEmployee().getFirstName()+" "+ claim.getEmployee().getLastName());
+        dto.setEmployeeName(
+            claim.getEmployee().getFirstName() + " "
+            + claim.getEmployee().getLastName());
         dto.setEmployeeInsuranceId(
-            claim.getEmployeeInsurance().getId()
-        );
+            claim.getEmployeeInsurance().getId());
         dto.setPlanName(
-            claim.getEmployeeInsurance().getInsurancePlan().getPlanName()
-        );
+            claim.getEmployeeInsurance().getInsurancePlan().getPlanName());
         dto.setClaimAmount(claim.getClaimAmount());
         dto.setReason(claim.getReason());
         dto.setStatus(claim.getStatus());
@@ -142,22 +214,4 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         dto.setCreatedAt(claim.getCreatedAt());
         return dto;
     }
-
-	@Override
-	public List<ClaimResponseDTO> getAllClaims(ClaimStatus status) {
-	    if (status != null) {
-	        return insuranceClaimRepository.findByStatus(status)
-	                .stream()
-	                .map(this::mapToClaimResponse)
-	                .collect(Collectors.toList());
-	    }
-	    return insuranceClaimRepository.findAll()
-	            .stream()
-	            .map(this::mapToClaimResponse)
-	            .collect(Collectors.toList());
-	}
-
 }
-
-
-

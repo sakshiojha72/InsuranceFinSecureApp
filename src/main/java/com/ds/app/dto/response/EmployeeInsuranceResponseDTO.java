@@ -21,4 +21,6 @@ public class EmployeeInsuranceResponseDTO {
     private LocalDate expiryDate;
     private InsuranceStatus status;
     private LocalDateTime createdAt;
+	private Double remainingCoverage;
+		
 }

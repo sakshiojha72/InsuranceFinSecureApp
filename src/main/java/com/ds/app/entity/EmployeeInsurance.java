@@ -21,6 +21,9 @@ public class EmployeeInsurance {
 
     @ManyToOne(fetch = FetchType.LAZY)
     
+    @Column(nullable = false)
+    private Double remainingCoverage;
+    
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 

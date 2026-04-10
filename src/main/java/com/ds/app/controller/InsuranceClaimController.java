@@ -72,8 +72,9 @@ public class InsuranceClaimController {
         MyUserDetails userDetails = (MyUserDetails) SecurityContextHolder
                 .getContext().getAuthentication().getPrincipal();
         // get the logged in admin's username from JWT and set it on the dto
-        dto.setResolvedBy(userDetails.getUser().getUsername());
-        ClaimResponseDTO response = insuranceClaimService.updateClaimStatus(dto);
+        String resolvedBy = userDetails.getUser().getUsername();
+
+        ClaimResponseDTO response = insuranceClaimService.updateClaimStatus(dto, resolvedBy);
         return ResponseEntity.ok(response);
     }
 }
