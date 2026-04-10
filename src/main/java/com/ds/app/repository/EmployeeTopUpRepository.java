@@ -19,4 +19,6 @@ public interface EmployeeTopUpRepository extends JpaRepository<EmployeeTopUp, Lo
 	
 	//check if emp already bought this topup 
 	boolean existsByEmployee_UserIdAndTopUpPlan_Id(Long employeeId, Long topUpPlanId);
+	
+	
 }

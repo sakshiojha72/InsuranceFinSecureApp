@@ -60,4 +60,7 @@ public interface EmployeeInsuranceRepository extends JpaRepository<EmployeeInsur
             @Param("status") InsuranceStatus status,
             @Param("today") LocalDate today,
             @Param("alertDate") LocalDate alertDate);
+    
+ // Used to prevent duplicate plan assignments per employee
+    Optional<EmployeeInsurance> findByEmployee_UserIdAndInsurancePlan_Id(Long userId, Long planId);
 }

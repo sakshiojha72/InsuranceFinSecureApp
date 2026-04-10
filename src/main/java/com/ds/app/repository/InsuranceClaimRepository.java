@@ -36,6 +36,10 @@ public interface InsuranceClaimRepository extends JpaRepository<InsuranceClaim, 
 	        "WHERE ic.status = :status " +
 	        "ORDER BY ic.raisedAt ASC")
 	 List<InsuranceClaim> findAllPendingClaims(ClaimStatus status);
+	 
+	// Used to prevent duplicate claim seeds 
+	 boolean existsByEmployee_UserIdAndEmployeeInsurance_IdAndReason(
+	         Long userId, Long employeeInsuranceId, String reason);
 
 
 }
