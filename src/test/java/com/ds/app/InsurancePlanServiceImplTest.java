@@ -197,7 +197,7 @@ class InsurancePlanServiceImplTest {
                 .thenReturn(true);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                insurancePlanService.assignInsurance(dto)
+                insurancePlanService.assignInsurance(dto, "admin01")
         );
 
         assertTrue(ex.getMessage().contains("already has an active"));

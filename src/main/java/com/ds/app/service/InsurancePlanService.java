@@ -26,10 +26,8 @@ public interface InsurancePlanService {
 	public void deactivateInsurancePlan(Long planId);
 	
 	//admin assign plan to employee
-	public EmployeeInsuranceResponseDTO assignInsurance(AssignInsuranceRequestDTO dto);
+	public EmployeeInsuranceResponseDTO assignInsurance(AssignInsuranceRequestDTO dto, String assignedBy);
 	
 	public EmployeeInsuranceResponseDTO getEmployeeInsurance(Long employeeId);
-	
-	
-	
+		
 }

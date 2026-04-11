@@ -8,6 +8,8 @@ import com.ds.app.dto.response.ClaimResponseDTO;
 import com.ds.app.entity.ClaimStatus;
 
 public interface InsuranceClaimService {
+	
+	
     // employee raises a claim against their active insurance
    public ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId);
 

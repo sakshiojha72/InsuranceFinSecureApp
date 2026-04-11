@@ -58,8 +58,11 @@ public class InsurancePlanController {
     @PostMapping("/assign")
     public ResponseEntity<EmployeeInsuranceResponseDTO> assignInsurance(
             @Valid @RequestBody AssignInsuranceRequestDTO dto) {
+        MyUserDetails userDetails = (MyUserDetails) SecurityContextHolder
+                .getContext().getAuthentication().getPrincipal();
+        String assignedBy = userDetails.getUser().getUsername();
         EmployeeInsuranceResponseDTO response =
-            insurancePlanService.assignInsurance(dto);
+            insurancePlanService.assignInsurance(dto, assignedBy);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

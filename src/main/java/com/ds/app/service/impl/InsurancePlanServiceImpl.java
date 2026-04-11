@@ -91,7 +91,7 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
     // ─── ASSIGN INSURANCE TO EMPLOYEE ─────────────────────────────────────────
     @Override
     public EmployeeInsuranceResponseDTO assignInsurance(
-            AssignInsuranceRequestDTO dto) {
+            AssignInsuranceRequestDTO dto, String assignedBy) {
 
         // 1. employee must exist
         Employee employee = employeeRepository.findById(dto.getEmployeeId())
@@ -127,6 +127,7 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         insurance.setExpiryDate(dto.getExpiryDate());
         insurance.setStatus(InsuranceStatus.ACTIVE);
         insurance.setRemainingCoverage(plan.getCoverageAmount());
+        insurance.setAssignedBy(assignedBy);
 
         EmployeeInsurance saved = employeeInsuranceRepository.save(insurance);
         return mapToInsuranceResponse(saved);
