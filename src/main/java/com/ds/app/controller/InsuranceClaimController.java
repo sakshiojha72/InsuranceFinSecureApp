@@ -14,7 +14,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Insurance Claims", description = "Raise, view and approve/reject insurance claims")
 @RestController
 @RequestMapping("/finsecure/insurance/claims")
 public class InsuranceClaimController {
@@ -23,7 +26,7 @@ public class InsuranceClaimController {
     private InsuranceClaimService insuranceClaimService;
 
     // only EMPLOYEE can raise a claim
-    // employeeId comes from JWT — never from request body
+    @Operation(summary = "Raise a claim", description = "EMPLOYEE only. Raises a claim against their active insurance. Claim amount cannot exceed remaining coverage.")
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     @PostMapping
     public ResponseEntity<ClaimResponseDTO> raiseClaim(
@@ -36,6 +39,7 @@ public class InsuranceClaimController {
     }
 
     // only EMPLOYEE can view their own claims
+    @Operation(summary = "View my claims", description = "EMPLOYEE only. Returns full claim history of the logged-in employee.")
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<List<ClaimResponseDTO>> getMyClaims() {
@@ -47,6 +51,7 @@ public class InsuranceClaimController {
     }
 
     // ADMIN and HR can view all claims with optional status filter
+    @Operation(summary = "View all claims", description = "ADMIN and HR. Optionally filter by status: PENDING, APPROVED, REJECTED.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping
     public ResponseEntity<List<ClaimResponseDTO>> getAllClaims(
@@ -56,6 +61,7 @@ public class InsuranceClaimController {
     }
 
     // ADMIN and HR can view a specific employee's claims
+    @Operation(summary = "View claims by employee", description = "ADMIN and HR. Returns claim history for a specific employee.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<ClaimResponseDTO>> getEmployeeClaims(
@@ -65,6 +71,7 @@ public class InsuranceClaimController {
     }
 
     // only ADMIN can approve or reject a claim
+    @Operation(summary = "Approve or reject a claim", description = "ADMIN only. Updates claim status. On approval, remaining coverage is deducted. resolvedBy is auto-set from JWT.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/status")
     public ResponseEntity<ClaimResponseDTO> updateClaimStatus(

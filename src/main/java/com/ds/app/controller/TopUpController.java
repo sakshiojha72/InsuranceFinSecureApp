@@ -14,7 +14,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Top-Up Plans", description = "Create and purchase additional coverage top-ups")
 @RestController
 @RequestMapping("/finsecure/insurance/topups")
 public class TopUpController {
@@ -23,6 +26,7 @@ public class TopUpController {
     private TopUpService topUpService;
 
     // only ADMIN can create a top-up plan
+    @Operation(summary = "Create a top-up plan", description = "ADMIN only. Creates a new top-up plan with additional coverage and price.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/plans")
     public ResponseEntity<TopUpPlanResponseDTO> createTopUpPlan(
@@ -35,6 +39,7 @@ public class TopUpController {
     }
 
     // ADMIN, HR and EMPLOYEE can browse available top-up plans
+    @Operation(summary = "View all active top-up plans", description = "ADMIN, HR and EMPLOYEE can browse available top-up plans.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR') or hasAuthority('EMPLOYEE')")
     @GetMapping("/plans")
     public ResponseEntity<List<TopUpPlanResponseDTO>> getAllTopUpPlans() {
@@ -43,6 +48,7 @@ public class TopUpController {
     }
 
     // only ADMIN can deactivate a top-up plan
+    @Operation(summary = "Deactivate a top-up plan", description = "ADMIN only. Soft deletes a top-up plan.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/plans/{topUpPlanId}")
     public ResponseEntity<String> deactivateTopUpPlan(
@@ -52,7 +58,7 @@ public class TopUpController {
     }
 
     // only EMPLOYEE can buy a top-up
-    // employeeId from JWT — never from body
+    @Operation(summary = "Buy a top-up", description = "EMPLOYEE only. Purchases a top-up plan. Employee must have active base insurance. remainingCoverage is increased immediately.")
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     @PostMapping("/buy")
     public ResponseEntity<EmployeeTopUpResponseDTO> buyTopUp(
@@ -65,6 +71,7 @@ public class TopUpController {
     }
 
     // only EMPLOYEE can view their own top-ups
+    @Operation(summary = "View my top-ups", description = "EMPLOYEE only. Returns all top-ups purchased by the logged-in employee.")
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<List<EmployeeTopUpResponseDTO>> getMyTopUps() {
@@ -76,6 +83,7 @@ public class TopUpController {
     }
 
     // ADMIN and HR can view any employee's top-ups
+    @Operation(summary = "View employee top-ups", description = "ADMIN and HR. Returns all top-ups purchased by a specific employee.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<List<EmployeeTopUpResponseDTO>> getEmployeeTopUps(

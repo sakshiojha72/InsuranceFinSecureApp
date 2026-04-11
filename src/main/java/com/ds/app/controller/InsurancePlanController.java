@@ -14,7 +14,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
+@Tag(name = "Insurance Plans", description = "Create, assign, view and deactivate insurance plans")
 @RestController
 @RequestMapping("/finsecure/insurance/plans")
 public class InsurancePlanController {
@@ -23,6 +26,7 @@ public class InsurancePlanController {
     private InsurancePlanService insurancePlanService;
 
     // only ADMIN can create a plan
+    @Operation(summary = "Create a new insurance plan", description = "ADMIN only. Creates a base insurance plan with coverage amount.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public ResponseEntity<InsurancePlanResponseDTO> createInsurancePlan(
@@ -36,6 +40,7 @@ public class InsurancePlanController {
     }
 
     // ADMIN and HR can view all plans
+    @Operation(summary = "Get all active plans", description = "ADMIN and HR can view all currently active insurance plans.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping
     public ResponseEntity<List<InsurancePlanResponseDTO>> getAllPlans() {
@@ -45,6 +50,7 @@ public class InsurancePlanController {
     }
 
     // only ADMIN can deactivate a plan
+    @Operation(summary = "Deactivate a plan", description = "ADMIN only. Soft deletes a plan — existing assignments are not affected.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{planId}")
     public ResponseEntity<String> deactivatePlan(
@@ -54,6 +60,7 @@ public class InsurancePlanController {
     }
 
     // only ADMIN can assign a plan to an employee
+    @Operation(summary = "Assign insurance to employee", description = "ADMIN only. Assigns an active plan to an employee. Employee can only have one active insurance at a time.")
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/assign")
     public ResponseEntity<EmployeeInsuranceResponseDTO> assignInsurance(
@@ -67,7 +74,7 @@ public class InsurancePlanController {
     }
 
     // only EMPLOYEE can view their own insurance
-    // identity comes from JWT — never from URL
+    @Operation(summary = "View my insurance", description = "EMPLOYEE only. Returns the logged-in employee's active insurance. Identity from JWT.")
     @PreAuthorize("hasAuthority('EMPLOYEE')")
     @GetMapping("/my")
     public ResponseEntity<EmployeeInsuranceResponseDTO> getMyInsurance() {
@@ -80,6 +87,7 @@ public class InsurancePlanController {
     }
 
     // ADMIN and HR can view any employee's insurance
+    @Operation(summary = "View any employee's insurance", description = "ADMIN and HR only. Returns active insurance for the given employee ID.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping("/employee/{employeeId}")
     public ResponseEntity<EmployeeInsuranceResponseDTO> getEmployeeInsurance(
