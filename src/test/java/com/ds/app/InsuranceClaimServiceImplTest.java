@@ -57,8 +57,6 @@ class InsuranceClaimServiceImplTest {
         return plan;
     }
 
-    // FIX: added remainingCoverage parameter — without this, APPROVED claim
-    // tests throw NullPointerException when service does
     // getRemainingCoverage() - claimAmount
     private EmployeeInsurance buildInsurance(Long id, Employee emp,
                                               InsurancePlan plan,
@@ -69,19 +67,16 @@ class InsuranceClaimServiceImplTest {
         ins.setEmployee(emp);
         ins.setInsurancePlan(plan);
         ins.setStatus(status);
-        ins.setRemainingCoverage(remainingCoverage); // CRITICAL — must be set
+        ins.setRemainingCoverage(remainingCoverage); 
         return ins;
     }
 
-    // ============================================================
-    // TEST 1: raiseClaim — happy path
-    // ============================================================
+    // TEST 1: raiseClaim 
     @Test
     void raiseClaim_ShouldReturnResponse_WhenAllChecksPass() {
 
         Employee emp = buildEmployee(1L, "emp01");
         InsurancePlan plan = buildPlan(1L, "Gold Plan", 500000.0);
-        // remainingCoverage = 500000 (full, no claims yet)
         EmployeeInsurance insurance = buildInsurance(
                 1L, emp, plan, InsuranceStatus.ACTIVE, 500000.0);
 
@@ -116,9 +111,7 @@ class InsuranceClaimServiceImplTest {
         assertEquals(1L, result.getClaimId());
     }
 
-    // ============================================================
     // TEST 2: raiseClaim — expired insurance
-    // ============================================================
     @Test
     void raiseClaim_ShouldThrowException_WhenInsuranceIsExpired() {
 
@@ -140,13 +133,10 @@ class InsuranceClaimServiceImplTest {
                 insuranceClaimService.raiseClaim(dto, 1L));
 
         assertTrue(ex.getMessage().contains("expired"));
-        // confirm save was NEVER called — no claim created
         verify(insuranceClaimRepository, never()).save(any());
     }
 
-    // ============================================================
     // TEST 3: raiseClaim — already has a PENDING claim
-    // ============================================================
     @Test
     void raiseClaim_ShouldThrowException_WhenPendingClaimAlreadyExists() {
 
@@ -172,9 +162,7 @@ class InsuranceClaimServiceImplTest {
         assertTrue(ex.getMessage().contains("pending claim"));
     }
 
-    // ============================================================
     // TEST 4: raiseClaim — employee not found
-    // ============================================================
     @Test
     void raiseClaim_ShouldThrowException_WhenEmployeeNotFound() {
 
@@ -188,9 +176,7 @@ class InsuranceClaimServiceImplTest {
                 insuranceClaimService.raiseClaim(dto, 99L));
     }
 
-    // ============================================================
     // TEST 5: raiseClaim — claim amount exceeds remaining coverage
-    // ============================================================
     @Test
     void raiseClaim_ShouldThrowException_WhenClaimExceedsRemainingCoverage() {
 
@@ -214,15 +200,13 @@ class InsuranceClaimServiceImplTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 insuranceClaimService.raiseClaim(dto, 1L));
 
-        // message should mention coverage or limit
+        // message mention coverage or limit
         assertTrue(ex.getMessage().contains("coverage") ||
                    ex.getMessage().contains("exceeds"));
         verify(insuranceClaimRepository, never()).save(any());
     }
 
-    // ============================================================
-    // TEST 6: getEmployeeClaims — returns list
-    // ============================================================
+    // TEST 6: getEmployeeClaims 
     @Test
     void getEmployeeClaims_ShouldReturnList() {
 
@@ -250,9 +234,7 @@ class InsuranceClaimServiceImplTest {
         assertEquals(ClaimStatus.PENDING, result.get(0).getStatus());
     }
 
-    // ============================================================
     // TEST 7: getAllClaims — with status filter
-    // ============================================================
     @Test
     void getAllClaims_WithStatusFilter_ShouldReturnFilteredList() {
 
@@ -279,9 +261,7 @@ class InsuranceClaimServiceImplTest {
         assertEquals(ClaimStatus.APPROVED, result.get(0).getStatus());
     }
 
-    // ============================================================
-    // TEST 8: getAllClaims — no filter returns all
-    // ============================================================
+    // TEST 8: getAllClaims 
     @Test
     void getAllClaims_WithNoFilter_ShouldReturnAll() {
 
@@ -309,9 +289,7 @@ class InsuranceClaimServiceImplTest {
         assertEquals(2, result.size());
     }
 
-    // ============================================================
-    // TEST 9: updateClaimStatus — happy path (approve)
-    // ============================================================
+    // TEST 9: updateClaimStatus
     @Test
     void updateClaimStatus_ShouldApprove_WhenClaimIsPending() {
 
@@ -351,9 +329,7 @@ class InsuranceClaimServiceImplTest {
         verify(employeeInsuranceRepository, times(1)).save(insurance);
     }
 
-    // ============================================================
     // TEST 10: updateClaimStatus — claim already resolved
-    // ============================================================
     @Test
     void updateClaimStatus_ShouldThrowException_WhenClaimAlreadyResolved() {
 
@@ -380,12 +356,10 @@ class InsuranceClaimServiceImplTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 insuranceClaimService.updateClaimStatus(dto, "admin01"));
 
-        assertTrue(ex.getMessage().contains("PENDING"));
+        assertTrue(ex.getMessage().contains("already been processed"));
     }
 
-    // ============================================================
     // TEST 11: updateClaimStatus — cannot set status back to PENDING
-    // ============================================================
     @Test
     void updateClaimStatus_ShouldThrowException_WhenNewStatusIsPending() {
 
@@ -407,7 +381,6 @@ class InsuranceClaimServiceImplTest {
         when(insuranceClaimRepository.findById(1L))
                 .thenReturn(Optional.of(claim));
 
-        // FIX: two-param signature
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 insuranceClaimService.updateClaimStatus(dto, "admin01"));
 

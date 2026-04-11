@@ -211,6 +211,7 @@ public class InsuranceDataLoader {
                     ei.setExpiryDate(expiry);
                     ei.setStatus(status);
                     ei.setAssignedBy(ADMIN_USERNAME);
+                    ei.setRemainingCoverage(plan.getCoverageAmount());
                     EmployeeInsurance saved = repo.save(ei);
                     System.out.println("✅ EmployeeInsurance — " + emp.getUsername()
                             + " → " + plan.getPlanName() + " [" + status + "]");
