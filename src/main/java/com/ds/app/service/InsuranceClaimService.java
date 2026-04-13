@@ -14,11 +14,10 @@ public interface InsuranceClaimService {
    public ClaimResponseDTO raiseClaim(ClaimRequestDTO dto, Long employeeId);
 
     // admin views all claims
-    public List<ClaimResponseDTO> getAllClaims(ClaimStatus status);
+   List<ClaimResponseDTO> getAllClaims(ClaimStatus status, int page, int size);
 
     // employee views their own claim history
     public List<ClaimResponseDTO> getEmployeeClaims(Long employeeId);
 
     // admin approves or rejects a claim
-    public ClaimResponseDTO updateClaimStatus(ClaimStatusUpdateDTO dto,String resolvedByUsername);
-}
+    ClaimResponseDTO updateClaimStatus(ClaimStatusUpdateDTO dto, String resolvedBy);}

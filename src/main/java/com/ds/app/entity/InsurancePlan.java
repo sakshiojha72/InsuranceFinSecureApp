@@ -14,9 +14,10 @@ import java.time.LocalDateTime;
 
 public class InsurancePlan {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) 
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "plan_id")
+	private Long id;
 
     @Column(name = "plan_name", nullable = false, unique = true)
     private String planName;

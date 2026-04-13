@@ -186,7 +186,7 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
     // MAPPERS
     private EmployeeInsuranceResponseDTO mapToInsuranceResponse(EmployeeInsurance ins) {
         EmployeeInsuranceResponseDTO dto = new EmployeeInsuranceResponseDTO();
-        dto.setEmployeInsuranceId(ins.getId());
+        dto.setEmployeeInsuranceId(ins.getId());
         dto.setEmployeeId(ins.getEmployee().getUserId());
 
         // fallback to username if firstName/lastName are blank (same fix as other services)

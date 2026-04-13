@@ -21,11 +21,15 @@ import com.ds.app.exception.InsurancePlanNotFoundException;
 import com.ds.app.repository.EmployeeInsuranceRepository;
 import com.ds.app.repository.EmployeeRepository;
 import com.ds.app.repository.InsurancePlanRepository;
+import com.ds.app.service.EmailService;
 import com.ds.app.service.InsurancePlanService;
 
 @Service
 public class InsurancePlanServiceImpl implements InsurancePlanService {
 
+	@Autowired
+	private EmailService emailService;
+	
     @Autowired
     private InsurancePlanRepository insurancePlanRepository;
 
@@ -128,9 +132,18 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         insurance.setStatus(InsuranceStatus.ACTIVE);
         insurance.setRemainingCoverage(plan.getCoverageAmount());
         insurance.setAssignedBy(assignedBy);
-
         EmployeeInsurance saved = employeeInsuranceRepository.save(insurance);
-        return mapToInsuranceResponse(saved);
+
+     // notify employee their insurance is active
+         String employeeEmail = employee.getEmail();
+         emailService.sendInsuranceAssignedEmail(
+         employeeEmail,
+         employee.getFirstName() + " " + employee.getLastName(),
+         plan.getPlanName(),
+         plan.getCoverageAmount(),
+         dto.getExpiryDate().toString());
+
+     return mapToInsuranceResponse(saved);
     }
 
     // ─── GET EMPLOYEE'S ACTIVE INSURANCE ──────────────────────────────────────
@@ -162,7 +175,7 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
     private EmployeeInsuranceResponseDTO mapToInsuranceResponse(
             EmployeeInsurance ins) {
         EmployeeInsuranceResponseDTO dto = new EmployeeInsuranceResponseDTO();
-        dto.setEmployeInsuranceId(ins.getId());
+        dto.setEmployeeInsuranceId(ins.getId());
         dto.setEmployeeId(ins.getEmployee().getUserId());
         dto.setEmployeeName(
             ins.getEmployee().getFirstName() + " "

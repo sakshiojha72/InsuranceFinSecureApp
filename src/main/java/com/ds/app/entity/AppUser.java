@@ -30,6 +30,8 @@ public class AppUser {
 	private Integer failedLoginAttemptsCount = 0;
 	private Boolean isAccountLocked = false;
 	
+	
+	
 	@EqualsAndHashCode.Exclude
 	private UserRole role;
 }

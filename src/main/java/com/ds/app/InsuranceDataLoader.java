@@ -49,18 +49,25 @@ public class InsuranceDataLoader {
             }
 
             // ── EMPLOYEES ────────────────────────────────────────────────────
-            Employee emp1 = ensureEmployee(employeeRepo, passwordEncoder,
-                    "emp1", "emp123", "Alice", "Insurance", UserRole.EMPLOYEE);
+        	// emp1 — your first Gmail
+        	Employee emp1 = ensureEmployee(employeeRepo, passwordEncoder,
+        	        "emp1", "emp123", "Alice", "Insurance", UserRole.EMPLOYEE,
+        	        "sakshiojha72@gmail.com");
 
-            Employee emp2 = ensureEmployee(employeeRepo, passwordEncoder,
-                    "emp2", "emp456", "Bob", "Coverage", UserRole.EMPLOYEE);
+        	// emp2 — your college email
+        	Employee emp2 = ensureEmployee(employeeRepo, passwordEncoder,
+        	        "emp2", "emp456", "Bob", "Coverage", UserRole.EMPLOYEE,
+        	        "sakshi.mca24@bvicam.in");
 
-            Employee rahul = ensureEmployee(employeeRepo, passwordEncoder,
-                    "rahul", "rahul123", "Rahul", "Verma", UserRole.EMPLOYEE);
+        	// rahul — dummy, not testing email for him
+        	Employee rahul = ensureEmployee(employeeRepo, passwordEncoder,
+        	        "rahul", "rahul123", "Rahul", "Verma", UserRole.EMPLOYEE,
+        	        "rahul.verma@finsecure.com");
 
-            // sneha intentionally gets NO insurance — summary 404 edge case
-            ensureEmployee(employeeRepo, passwordEncoder,
-                    "sneha", "sneha123", "Sneha", "Patel", UserRole.EMPLOYEE);
+        	// sneha — no insurance edge case, dummy email fine
+        	ensureEmployee(employeeRepo, passwordEncoder,
+        	        "sneha", "sneha123", "Sneha", "Patel", UserRole.EMPLOYEE,
+        	        "sneha.patel@finsecure.com");
 
             // ── INSURANCE PLANS ──────────────────────────────────────────────
             InsurancePlan basicPlan = ensurePlan(insurancePlanRepo,
@@ -154,7 +161,8 @@ public class InsuranceDataLoader {
     }
 
     private Employee ensureEmployee(EmployeeRepository repo, PasswordEncoder enc,
-            String username, String pass, String first, String last, UserRole role) {
+            String username, String pass, String first, String last, 
+            UserRole role, String email) {  // added email parameter
         return repo.findByUsername(username).orElseGet(() -> {
             Employee e = new Employee();
             e.setUsername(username);
@@ -162,8 +170,9 @@ public class InsuranceDataLoader {
             e.setRole(role);
             e.setFirstName(first);
             e.setLastName(last);
+            e.setEmail(email);  // now uses passed email
             Employee saved = repo.save(e);
-            System.out.println("✅ Employee created — " + username);
+            System.out.println("Employee created: " + username);
             return saved;
         });
     }

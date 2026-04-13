@@ -15,9 +15,10 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(exclude = {"employee", "topUpPlan"})
 public class EmployeeTopUp {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "employee_top_up_id")
+	private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)

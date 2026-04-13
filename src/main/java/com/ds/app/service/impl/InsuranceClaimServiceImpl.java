@@ -22,7 +22,11 @@ import com.ds.app.exception.InsufficientCoverageException;
 import com.ds.app.repository.EmployeeInsuranceRepository;
 import com.ds.app.repository.EmployeeRepository;
 import com.ds.app.repository.InsuranceClaimRepository;
+import com.ds.app.service.EmailService;
 import com.ds.app.service.InsuranceClaimService;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class InsuranceClaimServiceImpl implements InsuranceClaimService {
@@ -36,6 +40,8 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
     @Autowired
     private EmployeeInsuranceRepository employeeInsuranceRepository;
 
+    @Autowired
+    private EmailService emailService;
     // ─── RAISE CLAIM ──────────────────────────────────────────────────────────
 
     @Override
@@ -153,7 +159,26 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         }
 
         InsuranceClaim saved = insuranceClaimRepository.save(claim);
-        return mapToClaimResponse(saved);
+
+     // send email notification to employee
+        String employeeEmail = claim.getEmployee().getEmail();
+     // In production this would be a dedicated email field
+     String employeeName = claim.getEmployee().getFirstName()
+             + " " + claim.getEmployee().getLastName();
+     String planName = claim.getEmployeeInsurance()
+             .getInsurancePlan().getPlanName();
+
+     if (dto.getStatus() == ClaimStatus.APPROVED) {
+         emailService.sendClaimApprovedEmail(
+             employeeEmail, employeeName,
+             claim.getClaimAmount(), planName, dto.getAdminRemarks());
+     } else if (dto.getStatus() == ClaimStatus.REJECTED) {
+         emailService.sendClaimRejectedEmail(
+             employeeEmail, employeeName,
+             claim.getClaimAmount(), planName, dto.getAdminRemarks());
+     }
+
+     return mapToClaimResponse(saved);
     }
 
     // ─── GET CLAIMS BY EMPLOYEE ───────────────────────────────────────────────
@@ -172,16 +197,17 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
     }
 
     // ─── GET ALL CLAIMS (ADMIN/HR) ─────────────────────────────────────────────
-
     @Override
-    public List<ClaimResponseDTO> getAllClaims(ClaimStatus status) {
+    public List<ClaimResponseDTO> getAllClaims(ClaimStatus status, int page, int size) {
+        // Pageable tells Spring: give me 'size' records starting from 'page'
+        // page 0 = first page, page 1 = second page etc.
+        Pageable pageable = PageRequest.of(page, size);
 
         List<InsuranceClaim> claims;
-
         if (status != null) {
-            claims = insuranceClaimRepository.findByStatus(status);
+            claims = insuranceClaimRepository.findByStatus(status, pageable);
         } else {
-            claims = insuranceClaimRepository.findAll();
+            claims = insuranceClaimRepository.findAll(pageable).getContent();
         }
 
         List<ClaimResponseDTO> result = new ArrayList<>();

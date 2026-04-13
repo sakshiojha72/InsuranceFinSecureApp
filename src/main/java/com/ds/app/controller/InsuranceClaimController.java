@@ -51,12 +51,14 @@ public class InsuranceClaimController {
     }
 
     // ADMIN and HR can view all claims with optional status filter
-    @Operation(summary = "View all claims", description = "ADMIN and HR. Optionally filter by status: PENDING, APPROVED, REJECTED.")
+    @Operation(summary = "View all claims", description = "ADMIN and HR. Filter by status. Supports pagination via page and size parameters.")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
     @GetMapping
     public ResponseEntity<List<ClaimResponseDTO>> getAllClaims(
-            @RequestParam(required = false) ClaimStatus status) {
-        List<ClaimResponseDTO> claims = insuranceClaimService.getAllClaims(status);
+            @RequestParam(required = false) ClaimStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<ClaimResponseDTO> claims = insuranceClaimService.getAllClaims(status, page, size);
         return ResponseEntity.ok(claims);
     }
 

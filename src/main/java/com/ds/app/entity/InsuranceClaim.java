@@ -14,9 +14,10 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(exclude = {"employee", "employeeInsurance"})
 public class InsuranceClaim {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "claim_id")
+	private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)

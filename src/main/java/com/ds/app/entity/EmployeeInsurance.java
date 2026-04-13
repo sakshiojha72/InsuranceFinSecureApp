@@ -15,9 +15,10 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(exclude = {"employee", "insurancePlan"})
 public class EmployeeInsurance {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "employee_insurance_id")
+	private Long id;
 
     @Column(nullable = false)
     private Double remainingCoverage;

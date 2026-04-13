@@ -41,5 +41,5 @@ public interface InsuranceClaimRepository extends JpaRepository<InsuranceClaim, 
 	 boolean existsByEmployee_UserIdAndEmployeeInsurance_IdAndReason(
 	         Long userId, Long employeeInsuranceId, String reason);
 
-
+	 List<InsuranceClaim> findByStatus(ClaimStatus status, Pageable pageable);
 }

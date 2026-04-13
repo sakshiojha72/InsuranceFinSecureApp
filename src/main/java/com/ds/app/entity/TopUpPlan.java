@@ -14,9 +14,10 @@ import java.time.LocalDateTime;
 
 public class TopUpPlan {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "top_up_plan_id")
+	private Long id;
 
     @Column(name = "top_up_name", nullable = false, unique = true)
     private String topUpName; 

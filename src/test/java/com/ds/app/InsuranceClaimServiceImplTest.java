@@ -14,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,21 +61,19 @@ class InsuranceClaimServiceImplTest {
         return plan;
     }
 
-    // getRemainingCoverage() - claimAmount
     private EmployeeInsurance buildInsurance(Long id, Employee emp,
-                                              InsurancePlan plan,
-                                              InsuranceStatus status,
-                                              Double remainingCoverage) {
+            InsurancePlan plan, InsuranceStatus status,
+            Double remainingCoverage) {
         EmployeeInsurance ins = new EmployeeInsurance();
         ins.setId(id);
         ins.setEmployee(emp);
         ins.setInsurancePlan(plan);
         ins.setStatus(status);
-        ins.setRemainingCoverage(remainingCoverage); 
+        ins.setRemainingCoverage(remainingCoverage);
         return ins;
     }
 
-    // TEST 1: raiseClaim 
+    // TEST 1: raiseClaim — happy path
     @Test
     void raiseClaim_ShouldReturnResponse_WhenAllChecksPass() {
 
@@ -182,7 +184,7 @@ class InsuranceClaimServiceImplTest {
 
         Employee emp = buildEmployee(1L, "emp01");
         InsurancePlan plan = buildPlan(1L, "Gold Plan", 600000.0);
-        // only 100000 remaining — employee already claimed 500000
+        // only 1L remaining — employee already used 5L
         EmployeeInsurance insurance = buildInsurance(
                 1L, emp, plan, InsuranceStatus.ACTIVE, 100000.0);
 
@@ -200,13 +202,12 @@ class InsuranceClaimServiceImplTest {
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 insuranceClaimService.raiseClaim(dto, 1L));
 
-        // message mention coverage or limit
         assertTrue(ex.getMessage().contains("coverage") ||
                    ex.getMessage().contains("exceeds"));
         verify(insuranceClaimRepository, never()).save(any());
     }
 
-    // TEST 6: getEmployeeClaims 
+    // TEST 6: getEmployeeClaims
     @Test
     void getEmployeeClaims_ShouldReturnList() {
 
@@ -235,6 +236,7 @@ class InsuranceClaimServiceImplTest {
     }
 
     // TEST 7: getAllClaims — with status filter
+    // FIX: now passes page=0, size=10 as pagination params
     @Test
     void getAllClaims_WithStatusFilter_ShouldReturnFilteredList() {
 
@@ -251,17 +253,21 @@ class InsuranceClaimServiceImplTest {
         claim.setReason("Checkup");
         claim.setStatus(ClaimStatus.APPROVED);
 
-        when(insuranceClaimRepository.findByStatus(ClaimStatus.APPROVED))
+        // FIX: repository now takes Pageable as second argument
+        when(insuranceClaimRepository.findByStatus(
+                eq(ClaimStatus.APPROVED), any(Pageable.class)))
                 .thenReturn(List.of(claim));
 
+        // FIX: pass page=0, size=10
         List<ClaimResponseDTO> result =
-                insuranceClaimService.getAllClaims(ClaimStatus.APPROVED);
+                insuranceClaimService.getAllClaims(ClaimStatus.APPROVED, 0, 10);
 
         assertEquals(1, result.size());
         assertEquals(ClaimStatus.APPROVED, result.get(0).getStatus());
     }
 
-    // TEST 8: getAllClaims 
+    // TEST 8: getAllClaims — no filter, returns all
+    // FIX: now passes page=0, size=10 as pagination params
     @Test
     void getAllClaims_WithNoFilter_ShouldReturnAll() {
 
@@ -282,14 +288,19 @@ class InsuranceClaimServiceImplTest {
         c2.setClaimAmount(2000.0); c2.setReason("B");
         c2.setStatus(ClaimStatus.APPROVED);
 
-        when(insuranceClaimRepository.findAll()).thenReturn(List.of(c1, c2));
+        // FIX: findAll now returns a Page object, not a plain List
+        Page<InsuranceClaim> page = new PageImpl<>(List.of(c1, c2));
+        when(insuranceClaimRepository.findAll(any(Pageable.class)))
+                .thenReturn(page);
 
-        List<ClaimResponseDTO> result = insuranceClaimService.getAllClaims(null);
+        // FIX: pass page=0, size=10
+        List<ClaimResponseDTO> result =
+                insuranceClaimService.getAllClaims(null, 0, 10);
 
         assertEquals(2, result.size());
     }
 
-    // TEST 9: updateClaimStatus
+    // TEST 9: updateClaimStatus — happy path approve
     @Test
     void updateClaimStatus_ShouldApprove_WhenClaimIsPending() {
 
@@ -316,16 +327,16 @@ class InsuranceClaimServiceImplTest {
         when(insuranceClaimRepository.findById(1L))
                 .thenReturn(Optional.of(claim));
         when(insuranceClaimRepository.save(any())).thenReturn(claim);
-        // employeeInsuranceRepository.save() is also called when APPROVED
+        // save is also called on insurance when claim is APPROVED
         when(employeeInsuranceRepository.save(any())).thenReturn(insurance);
 
-        // FIX: pass resolvedBy as second argument — "admin01" from JWT
+        // resolvedBy comes from JWT — passed as second param
         ClaimResponseDTO result =
                 insuranceClaimService.updateClaimStatus(dto, "admin01");
 
         assertEquals(ClaimStatus.APPROVED, result.getStatus());
         verify(insuranceClaimRepository, times(1)).save(claim);
-        // confirm coverage was updated in DB
+        // confirm remainingCoverage was updated in DB
         verify(employeeInsuranceRepository, times(1)).save(insurance);
     }
 
@@ -342,7 +353,7 @@ class InsuranceClaimServiceImplTest {
         claim.setId(1L);
         claim.setEmployee(emp);
         claim.setEmployeeInsurance(insurance);
-        claim.setStatus(ClaimStatus.APPROVED); // already resolved!
+        claim.setStatus(ClaimStatus.APPROVED); // already resolved
 
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setClaimId(1L);
@@ -352,7 +363,6 @@ class InsuranceClaimServiceImplTest {
         when(insuranceClaimRepository.findById(1L))
                 .thenReturn(Optional.of(claim));
 
-        // FIX: two-param signature
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 insuranceClaimService.updateClaimStatus(dto, "admin01"));
 
@@ -360,6 +370,7 @@ class InsuranceClaimServiceImplTest {
     }
 
     // TEST 11: updateClaimStatus — cannot set status back to PENDING
+    // FIX: added adminRemarks — service checks remarks before checking status
     @Test
     void updateClaimStatus_ShouldThrowException_WhenNewStatusIsPending() {
 
@@ -377,6 +388,7 @@ class InsuranceClaimServiceImplTest {
         ClaimStatusUpdateDTO dto = new ClaimStatusUpdateDTO();
         dto.setClaimId(1L);
         dto.setStatus(ClaimStatus.PENDING); // trying to set back to PENDING
+        dto.setAdminRemarks("Some remarks"); // FIX: required to pass remarks check
 
         when(insuranceClaimRepository.findById(1L))
                 .thenReturn(Optional.of(claim));

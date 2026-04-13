@@ -15,6 +15,9 @@ public class Employee extends AppUser {
 	private String firstName;
 	private String lastName;
 	
+	@Column(name = "email", unique = true)
+	private String email;
+	
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     private List<EmployeeInsurance> insurances;
 
