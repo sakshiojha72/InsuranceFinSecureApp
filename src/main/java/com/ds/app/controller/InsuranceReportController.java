@@ -2,6 +2,7 @@ package com.ds.app.controller;
 
 import com.ds.app.dto.response.ClaimResponseDTO;
 import com.ds.app.dto.response.EmployeeInsuranceResponseDTO;
+import com.ds.app.jwtutil.ExcelExportService;
 import com.ds.app.service.InsuranceReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,6 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +24,9 @@ public class InsuranceReportController {
 
     @Autowired
     private InsuranceReportService insuranceReportService;
+    
+    @Autowired
+    private ExcelExportService excelExportService;
 
     // Query 1 — employees with insurance AND top-up
     @Operation(summary = "Employees with insurance AND top-up", description = "Returns employees who have both active base insurance and at least one active top-up.")
@@ -88,4 +94,70 @@ public class InsuranceReportController {
             insuranceReportService.getInsurancesExpiringSoon(days)
         );
     }
+    
+ // ── Excel Download endpoints ─────────────────────────────────────────────────
+ // Download: employees with top-up
+    @GetMapping("/with-topup/download")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
+    public ResponseEntity<byte[]> downloadWithTopUp() throws Exception {
+        // service se data lo (existing method reuse)
+        List<EmployeeInsuranceResponseDTO> data =
+            insuranceReportService.getEmployeesWithInsuranceAndTopUp(0, Integer.MAX_VALUE);
+        byte[] excel = excelExportService.exportInsuranceList(data, "With TopUp");
+        return excelResponse(excel, "report_with_topup.xlsx");
+    }
+
+    // Download: employees with NO top-up
+    @GetMapping("/no-topup/download")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
+    public ResponseEntity<byte[]> downloadNoTopUp() throws Exception {
+        List<EmployeeInsuranceResponseDTO> data =
+            insuranceReportService.getEmployeesWithNoTopUp();
+        byte[] excel = excelExportService.exportInsuranceList(data, "No TopUp");
+        return excelResponse(excel, "report_no_topup.xlsx");
+    }
+
+    // Download: assigned between dates
+    @GetMapping("/assigned-between/download")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
+    public ResponseEntity<byte[]> downloadAssignedBetween(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) throws Exception {
+        List<EmployeeInsuranceResponseDTO> data =
+            insuranceReportService.getInsurancesAssignedBetween(startDate, endDate);
+        byte[] excel = excelExportService.exportInsuranceList(data, "Assigned Between");
+        return excelResponse(excel, "report_assigned_between.xlsx");
+    }
+
+    // Download: pending claims
+    @GetMapping("/pending-claims/download")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
+    public ResponseEntity<byte[]> downloadPendingClaims() throws Exception {
+        List<ClaimResponseDTO> data =
+            insuranceReportService.getPendingClaims(0, Integer.MAX_VALUE);
+        byte[] excel = excelExportService.exportClaimsList(data, "Pending Claims");
+        return excelResponse(excel, "report_pending_claims.xlsx");
+    }
+
+    // Download: expiring soon
+    @GetMapping("/expiring-soon/download")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('HR')")
+    public ResponseEntity<byte[]> downloadExpiringSoon(
+            @RequestParam(defaultValue = "30") int days) throws Exception {
+        List<EmployeeInsuranceResponseDTO> data =
+            insuranceReportService.getInsurancesExpiringSoon(days);
+        byte[] excel = excelExportService.exportInsuranceList(data, "Expiring Soon");
+        return excelResponse(excel, "report_expiring_soon.xlsx");
+    }
+
+    // ── Shared helper: ResponseEntity with Excel headers banana ─────────────────
+    private ResponseEntity<byte[]> excelResponse(byte[] data, String filename) {
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+            .contentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(data);
+    }
+    
 }
+

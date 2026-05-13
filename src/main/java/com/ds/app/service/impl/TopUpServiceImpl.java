@@ -68,7 +68,7 @@ public class TopUpServiceImpl implements TopUpService {
     @Override
     public List<TopUpPlanResponseDTO> getAllTopUpPlans() {
 
-        List<TopUpPlan> plans = topUpPlanRepository.findByIsActiveTrue();
+        List<TopUpPlan> plans = topUpPlanRepository.findAll();
         List<TopUpPlanResponseDTO> result = new ArrayList<>();
 
         for (TopUpPlan plan : plans) {

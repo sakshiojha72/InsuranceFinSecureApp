@@ -31,7 +31,7 @@ public class EmployeeTopUp {
     private TopUpPlan topUpPlan;
 
     @Column(name = "purchased_date")
-    private LocalDate purchasedDate; // auto set when employee buys (will do in service layer)
+    private LocalDate purchasedDate;
 
     @Column(name = "expiry_date", nullable = false)
     private LocalDate expiryDate; 

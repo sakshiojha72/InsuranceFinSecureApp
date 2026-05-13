@@ -12,13 +12,13 @@ import com.ds.app.entity.InsuranceStatus;
 public interface EmployeeTopUpRepository extends JpaRepository<EmployeeTopUp, Long>{
 
 	//get all top ups for an emp 
-	List<EmployeeTopUp> findByEmployee_UserId(Long employeeId);
+	public List<EmployeeTopUp> findByEmployee_UserId(Long employeeId);
 	
 	//only active top ups for an emp 
-	List<EmployeeTopUp> findByEmployee_UserIdAndStatus(Long employeeId, InsuranceStatus status);
+	public List<EmployeeTopUp> findByEmployee_UserIdAndStatus(Long employeeId, InsuranceStatus status);
 	
 	//check if emp already bought this topup 
-	boolean existsByEmployee_UserIdAndTopUpPlan_Id(Long employeeId, Long topUpPlanId);
+	public boolean existsByEmployee_UserIdAndTopUpPlan_Id(Long employeeId, Long topUpPlanId);
 	
 	
 }

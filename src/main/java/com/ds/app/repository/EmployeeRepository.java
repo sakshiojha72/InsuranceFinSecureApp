@@ -10,7 +10,8 @@ import com.ds.app.entity.Employee;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long>{
 
-	Optional<Employee> findByUsername(String name);
+	public Optional<Employee> findByUsername(String name);
+	public Optional<Employee> findByEmail(String email);
 	
 
 }

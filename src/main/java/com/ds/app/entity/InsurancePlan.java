@@ -23,13 +23,13 @@ public class InsurancePlan {
     private String planName;
 
     @Column(name = "coverage_amount", nullable = false)
-    private Double coverageAmount; // base coverage amount in rupees
+    private Double coverageAmount; 
 
     @Column(name = "description")
     private String description;  
 
     @Column(name = "is_active")
-    private Boolean isActive = true; // true by default — will set false to soft delete
+    private Boolean isActive = true; 
 
     @Column(name = "created_by")
     private String createdBy; 
@@ -41,4 +41,9 @@ public class InsurancePlan {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    //new requirement for a default plan.
+    @Column(name="is_default")
+    private Boolean isDefault = false;
+    
 }

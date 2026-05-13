@@ -96,4 +96,12 @@ public class InsurancePlanController {
             insurancePlanService.getEmployeeInsurance(employeeId);
         return ResponseEntity.ok(response);
     }
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PutMapping("/{planId}/set-default")
+    public ResponseEntity<InsurancePlanResponseDTO> setDefaultPlan(
+            @PathVariable Long planId) {
+        InsurancePlanResponseDTO response =
+                insurancePlanService.setDefaultPlan(planId);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -32,10 +32,10 @@ public class TopUpPlan {
     private String description; 
 
     @Column(name = "is_active")
-    private Boolean isActive = true; // false = soft deleted, employees cannot buy it anymore
+    private Boolean isActive = true; 
 
     @Column(name = "created_by")
-    private String createdBy; // email of admin who created this — audit trail
+    private String createdBy; 
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

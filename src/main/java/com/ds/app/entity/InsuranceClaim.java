@@ -26,12 +26,15 @@ public class InsuranceClaim {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_insurance_id", nullable = false)
-    // FK → employee_insurances table — which insurance this claim is against
+    // FK → employee_insurances table
     private EmployeeInsurance employeeInsurance;
 
-    @Column(name = "claim_amount", nullable = false)
+    @Column(name = "claim_amount", nullable = true)
     private Double claimAmount; 
 
+    @Column(name = "base_amount", nullable = true)
+    private Double baseAmount; 
+    
     @Column(name = "reason", nullable = false)
     private String reason; 
 
@@ -40,16 +43,18 @@ public class InsuranceClaim {
     private ClaimStatus status; 
 
     @Column(name = "raised_at")
-    private LocalDateTime raisedAt; // set in service when employee submits claim
+    private LocalDateTime raisedAt; 
 
     @Column(name = "resolved_at")
-    private LocalDateTime resolvedAt; // set in service when admin approves or rejects
+    private LocalDateTime resolvedAt; 
 
     @Column(name = "resolved_by")
     private String resolvedBy; 
 
     @Column(name = "admin_remarks")
     private String adminRemarks; 
+    
+    
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -19,7 +19,6 @@ public class SwaggerConfig {
                 .title("FinSecure Insurance Module API")
                 .description("REST API for managing employee insurance plans, top-ups and claims")
                 .version("1.0"))
-            // tells Swagger UI to send JWT token in Authorization header
             .addSecurityItem(new SecurityRequirement().addList("Bearer Token"))
             .components(new Components()
                 .addSecuritySchemes("Bearer Token", new SecurityScheme()

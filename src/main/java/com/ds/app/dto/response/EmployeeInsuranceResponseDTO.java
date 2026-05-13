@@ -22,5 +22,10 @@ public class EmployeeInsuranceResponseDTO {
     private InsuranceStatus status;
     private LocalDateTime createdAt;
 	private Double remainingCoverage;
+	private Double baseAmount;
+	
+	//new- will be computed fresh everytime dto built
+    private Long daysUntilExpiry;
+
 		
 }

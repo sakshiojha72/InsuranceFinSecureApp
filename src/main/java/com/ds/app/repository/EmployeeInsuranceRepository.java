@@ -13,54 +13,53 @@ import com.ds.app.entity.InsuranceStatus;
 @Repository
 public interface EmployeeInsuranceRepository extends JpaRepository<EmployeeInsurance, Long> {
 
-    // find active insurance for an emp
     Optional<EmployeeInsurance> findByEmployee_UserIdAndStatus(Long employeeId, InsuranceStatus active);
 
-    // get all insurance records (active + expired)
     List<EmployeeInsurance> findByEmployee_UserId(Long employeeId);
 
-    // check if emp has an active insurance (for assigning new insurance)
     boolean existsByEmployee_UserIdAndStatus(Long employeeId, InsuranceStatus active);
 
-    // Query 1 — active insurance AND active top-up
-    // changed from Page to List, removed Pageable
+    // Query 1 — with-topup report
+    // IN :statuses so both ACTIVE and EXPIRING_SOON employees are included
     @Query("SELECT DISTINCT ei FROM EmployeeInsurance ei " +
            "JOIN EmployeeTopUp et ON et.employee = ei.employee " +
-           "WHERE ei.status = :insuranceStatus " +
-           "AND et.status = :topUpStatus")
+           "WHERE ei.status IN :statuses")
     List<EmployeeInsurance> findEmployeesWithActiveInsuranceAndTopUp(
-            @Param("insuranceStatus") InsuranceStatus insuranceStatus,
-            @Param("topUpStatus") InsuranceStatus topUpStatus);
+            @Param("statuses") List<InsuranceStatus> statuses);
 
-    // Query 2 — active insurance but NO top-up at all
+    // Query 2 — no-topup report
+    // IN :statuses so EXPIRING_SOON employees without top-ups are also shown
     @Query("SELECT ei FROM EmployeeInsurance ei " +
-           "WHERE ei.status = :status " +
+           "WHERE ei.status IN :statuses " +
            "AND NOT EXISTS (" +
            "    SELECT et FROM EmployeeTopUp et " +
            "    WHERE et.employee = ei.employee" +
            ")")
     List<EmployeeInsurance> findEmployeesWithInsuranceButNoTopUp(
-            @Param("status") InsuranceStatus status);
+            @Param("statuses") List<InsuranceStatus> statuses);
 
-    // Query 3 — assigned between two dates
+    // Query 3 — assigned-between and financial-year reports
+    // No status filter — show ALL assignments in the date range regardless of status
     @Query("SELECT ei FROM EmployeeInsurance ei " +
-           "WHERE ei.assignedDate BETWEEN :startDate AND :endDate " +
-           "AND ei.status = :status")
+           "WHERE ei.assignedDate BETWEEN :startDate AND :endDate")
     List<EmployeeInsurance> findInsurancesAssignedBetween(
             @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate,
-            @Param("status") InsuranceStatus status);
+            @Param("endDate") LocalDate endDate);
 
-    // Query 5 — expiring between today and alertDate
-    // changed from Page to List, removed Pageable
+    // Query 5 — expiring-soon report
+    // IN :statuses — EXPIRING_SOON records must appear here too
     @Query("SELECT ei FROM EmployeeInsurance ei " +
-           "WHERE ei.status = :status " +
+           "WHERE ei.status IN :statuses " +
            "AND ei.expiryDate BETWEEN :today AND :alertDate")
     List<EmployeeInsurance> findInsurancesExpiringBetween(
-            @Param("status") InsuranceStatus status,
+            @Param("statuses") List<InsuranceStatus> statuses,
             @Param("today") LocalDate today,
             @Param("alertDate") LocalDate alertDate);
-    
- // Used to prevent duplicate plan assignments per employee
+
     Optional<EmployeeInsurance> findByEmployee_UserIdAndInsurancePlan_Id(Long userId, Long planId);
+
+    List<EmployeeInsurance> findByInsurancePlan_IdAndStatusIn(
+         Long planId, List<InsuranceStatus> statuses);
+    
+    List<EmployeeInsurance> findAllByEmployee_UserIdAndInsurancePlan_Id(Long userId, Long planId);
 }

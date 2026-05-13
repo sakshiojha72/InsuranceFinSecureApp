@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.ds.app.dto.request.AssignInsuranceRequestDTO;
 import com.ds.app.dto.request.CreateInsurancePlanRequestDTO;
+import com.ds.app.dto.response.DeactivatePlanResponseDTO;
 import com.ds.app.dto.response.EmployeeInsuranceResponseDTO;
 import com.ds.app.dto.response.InsurancePlanResponseDTO;
 import com.ds.app.entity.Employee;
@@ -18,11 +19,14 @@ import com.ds.app.entity.InsuranceStatus;
 import com.ds.app.exception.EmployeeNotFoundException;
 import com.ds.app.exception.InsuranceAlreadyAssignedException;
 import com.ds.app.exception.InsurancePlanNotFoundException;
+import com.ds.app.exception.ResourceNotFoundException;
 import com.ds.app.repository.EmployeeInsuranceRepository;
 import com.ds.app.repository.EmployeeRepository;
 import com.ds.app.repository.InsurancePlanRepository;
 import com.ds.app.service.EmailService;
 import com.ds.app.service.InsurancePlanService;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class InsurancePlanServiceImpl implements InsurancePlanService {
@@ -54,7 +58,8 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         plan.setCoverageAmount(dto.getCoverageAmount());
         plan.setDescription(dto.getDescription());
         plan.setCreatedBy(createdBy); 
-        plan.setIsActive(true);       
+        plan.setIsActive(true);  
+      
 
         InsurancePlan saved = insurancePlanRepository.save(plan);
         return mapToPlanResponse(saved);
@@ -65,7 +70,7 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
     public List<InsurancePlanResponseDTO> getAllInsurancePlans() {
 
         // only return active plans
-        List<InsurancePlan> plans = insurancePlanRepository.findByIsActiveTrue();
+        List<InsurancePlan> plans = insurancePlanRepository.findAll();
         List<InsurancePlanResponseDTO> result = new ArrayList<>();
 
         for (InsurancePlan plan : plans) {
@@ -76,20 +81,129 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
 
     // ─── DEACTIVATE PLAN ──────────────────────────────────────────────────────
     @Override
-    public void deactivateInsurancePlan(Long planId) {
+    @Transactional // all DB changes here must succeed together or all roll back
+    public DeactivatePlanResponseDTO deactivateInsurancePlan(Long planId) {
 
-        InsurancePlan plan = insurancePlanRepository.findById(planId)
-            .orElseThrow(() -> new InsurancePlanNotFoundException(planId));
+        // 1. Find the plan being deactivated
+        InsurancePlan planToDeactivate = insurancePlanRepository.findById(planId)
+                .orElseThrow(() -> new InsurancePlanNotFoundException(planId));
 
-        // plan already deactivated 
-        if (!plan.getIsActive()) {
-            throw new RuntimeException(
-                "Insurance plan is already deactivated");
+        if (!planToDeactivate.getIsActive()) {
+            throw new RuntimeException("This plan is already deactivated.");
         }
 
-        // soft delete
-        plan.setIsActive(false);
-        insurancePlanRepository.save(plan);
+        // 2. Can't deactivate the default plan — employees would have nowhere to go
+        if (Boolean.TRUE.equals(planToDeactivate.getIsDefault())) {
+            throw new RuntimeException(
+                "Cannot deactivate the default plan. "
+                + "Please mark another plan as default first, then deactivate this one.");
+        }
+
+        // 3. Find the default plan — employees will move here
+        InsurancePlan defaultPlan = insurancePlanRepository.findByIsDefaultTrue()
+                .orElseThrow(() -> new RuntimeException(
+                    "No default plan is set. "
+                    + "Please mark an active plan as default before deactivating any plan."));
+
+        // 4. Soft-delete the plan being deactivated
+        planToDeactivate.setIsActive(false);
+        insurancePlanRepository.save(planToDeactivate);
+
+        // 5. Find all employees currently on this plan (ACTIVE or EXPIRING_SOON)
+        // Both statuses mean the employee currently has live coverage — we must handle both
+        List<EmployeeInsurance> affectedRecords =
+                employeeInsuranceRepository.findByInsurancePlan_IdAndStatusIn(
+                        planId,
+                        List.of(InsuranceStatus.ACTIVE, InsuranceStatus.EXPIRING_SOON));
+
+        List<String> affectedNames = new ArrayList<>();
+
+        // 6. For each affected employee — expire old record, create new one, send email
+        for (EmployeeInsurance oldInsurance : affectedRecords) {
+
+            Employee employee = oldInsurance.getEmployee();
+
+            // Step A — expire the old insurance record (keep it for audit history)
+            // We never delete insurance records — claims may reference them
+            oldInsurance.setStatus(InsuranceStatus.EXPIRED);
+            employeeInsuranceRepository.save(oldInsurance);
+
+            // Step B — create a brand new EmployeeInsurance under the default plan
+            EmployeeInsurance newInsurance = new EmployeeInsurance();
+            newInsurance.setEmployee(employee);
+            newInsurance.setInsurancePlan(defaultPlan);
+            newInsurance.setAssignedDate(LocalDate.now());
+            // keep their same expiry date — they shouldn't lose time they already paid for
+            newInsurance.setExpiryDate(oldInsurance.getExpiryDate());
+            newInsurance.setStatus(InsuranceStatus.ACTIVE);
+            // remaining coverage resets to the new plan's coverage amount
+            // (they get the default plan's full coverage — fair reassignment)
+            newInsurance.setRemainingCoverage(defaultPlan.getCoverageAmount());
+            newInsurance.setBaseAmount(defaultPlan.getCoverageAmount());
+            // system did this assignment, not a specific admin user
+            newInsurance.setAssignedBy("SYSTEM");
+            employeeInsuranceRepository.save(newInsurance);
+
+            // Step C — collect name for the response summary
+            String fullName = employee.getFirstName() + " " + employee.getLastName();
+            affectedNames.add(fullName);
+
+            // Step D — send email notification
+            // wrapped in try-catch so one bad email doesn't stop the whole loop
+            String email = employee.getEmail();
+            if (email != null && !email.isEmpty()) {
+                try {
+                    emailService.sendPlanDeactivatedAndReassignedEmail(
+                            email,
+                            fullName,
+                            planToDeactivate.getPlanName(), // old plan name
+                            defaultPlan.getPlanName(),      // new plan name
+                            defaultPlan.getCoverageAmount(),
+                            oldInsurance.getExpiryDate().toString());
+                } catch (Exception e) {
+                    // log it but don't fail the whole operation for one email error
+                    System.err.println("Email failed for " + email + ": " + e.getMessage());
+                }
+            }
+        }
+
+        // 7. Build the summary response for the admin
+        String message = affectedRecords.isEmpty()
+                ? "Plan deactivated. No employees were on this plan."
+                : affectedRecords.size() + " employee(s) have been moved to \""
+                  + defaultPlan.getPlanName() + "\" and notified by email.";
+
+        return new DeactivatePlanResponseDTO(
+                planToDeactivate.getPlanName(),
+                defaultPlan.getPlanName(),
+                affectedRecords.size(),
+                affectedNames,
+                message);
+    }
+    
+    // ─── SET DEFAULT PLAN ─────────────────────────────────────────────────────
+    // Admin calls this to mark which plan is the fallback for deactivations
+    @Override
+    @Transactional // both queries (clear old + set new) must succeed together or both roll back
+    public InsurancePlanResponseDTO setDefaultPlan(Long planId) {
+
+        InsurancePlan plan = insurancePlanRepository.findById(planId)
+                .orElseThrow(() -> new InsurancePlanNotFoundException(planId));
+
+        // can't set an inactive plan as default — makes no sense to reassign to a dead plan
+        if (!plan.getIsActive()) {
+            throw new RuntimeException(
+                "Cannot set a deactivated plan as default. Choose an active plan.");
+        }
+
+        // Step 1 — clear whoever was default before (could be no one, that's fine)
+        insurancePlanRepository.clearExistingDefault();
+
+        // Step 2 — mark this plan as the new default
+        plan.setIsDefault(true);
+        InsurancePlan saved = insurancePlanRepository.save(plan);
+
+        return mapToPlanResponse(saved);
     }
 
     // ─── ASSIGN INSURANCE TO EMPLOYEE ─────────────────────────────────────────
@@ -112,13 +226,19 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
                 + "Please choose an active plan.");
         }
 
-        // 4. employee can only have ONE active insurance at a time
-        if (employeeInsuranceRepository.existsByEmployee_UserIdAndStatus(
-                dto.getEmployeeId(), InsuranceStatus.ACTIVE)) {
-            throw new InsuranceAlreadyAssignedException(dto.getEmployeeId());
-        }
 
-        // 5. expiry date must be in the future
+     List<EmployeeInsurance> existing = employeeInsuranceRepository
+             .findByEmployee_UserId(dto.getEmployeeId());
+
+     boolean alreadyActive = existing.stream()
+             .anyMatch(ei -> ei.getStatus() == InsuranceStatus.ACTIVE
+                          || ei.getStatus() == InsuranceStatus.EXPIRING_SOON);
+
+     if (alreadyActive) {
+         throw new InsuranceAlreadyAssignedException(dto.getEmployeeId());
+     }
+
+        // expiry date must be in the future
         if (dto.getExpiryDate() != null &&
                 !dto.getExpiryDate().isAfter(LocalDate.now())) {
             throw new RuntimeException(
@@ -132,16 +252,22 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         insurance.setStatus(InsuranceStatus.ACTIVE);
         insurance.setRemainingCoverage(plan.getCoverageAmount());
         insurance.setAssignedBy(assignedBy);
+        insurance.setRemainingCoverage(plan.getCoverageAmount());
+        insurance.setBaseAmount(plan.getCoverageAmount());
         EmployeeInsurance saved = employeeInsuranceRepository.save(insurance);
 
-     // notify employee their insurance is active
-         String employeeEmail = employee.getEmail();
-         emailService.sendInsuranceAssignedEmail(
-         employeeEmail,
-         employee.getFirstName() + " " + employee.getLastName(),
-         plan.getPlanName(),
-         plan.getCoverageAmount(),
-         dto.getExpiryDate().toString());
+        String employeeEmail = employee.getEmail();
+        if (employeeEmail != null && !employeeEmail.isEmpty()) {
+            emailService.sendInsuranceAssignedEmail(
+                employeeEmail,
+                employee.getFirstName() + " " + employee.getLastName(),
+                plan.getPlanName(),
+                plan.getCoverageAmount(),
+                dto.getExpiryDate().toString());
+        } else {
+            System.out.println("No email on file for employee ID: "
+                + employee.getUserId() + " — skipping notification");
+        }
 
      return mapToInsuranceResponse(saved);
     }
@@ -150,11 +276,17 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
     @Override
     public EmployeeInsuranceResponseDTO getEmployeeInsurance(Long employeeId) {
 
-        EmployeeInsurance insurance = employeeInsuranceRepository
-            .findByEmployee_UserIdAndStatus(employeeId, InsuranceStatus.ACTIVE)
-            .orElseThrow(() -> new RuntimeException(
-                "No active insurance found for employee: " + employeeId));
-
+        List<EmployeeInsurance> insurances = employeeInsuranceRepository
+                .findByEmployee_UserId(employeeId);
+        
+        EmployeeInsurance insurance = insurances.stream()
+                .filter(ei -> ei.getStatus() == InsuranceStatus.ACTIVE
+                           || ei.getStatus() == InsuranceStatus.EXPIRING_SOON)
+                .findFirst()
+                .orElseGet(() -> insurances.stream()
+                        .findFirst()
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "No insurance found for employee ID: " + employeeId)));
         return mapToInsuranceResponse(insurance);
     }
 
@@ -169,6 +301,8 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         dto.setIsActive(plan.getIsActive());
         dto.setCreatedBy(plan.getCreatedBy());
         dto.setCreatedAt(plan.getCreatedAt());
+        dto.setIsDefault(plan.getIsDefault());
+
         return dto;
     }
 
@@ -188,6 +322,15 @@ public class InsurancePlanServiceImpl implements InsurancePlanService {
         dto.setExpiryDate(ins.getExpiryDate());
         dto.setStatus(ins.getStatus());
         dto.setCreatedAt(ins.getCreatedAt());
+        dto.setRemainingCoverage(ins.getRemainingCoverage());
+        
+        //compute days till expiry
+	     if (ins.getExpiryDate() != null) {
+	         long days = java.time.temporal.ChronoUnit.DAYS.between(
+	                 LocalDate.now(), ins.getExpiryDate());
+	         dto.setDaysUntilExpiry(days); 
+	     }
+
         return dto;
     }
 }

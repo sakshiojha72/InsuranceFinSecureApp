@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -25,54 +26,40 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
     @Autowired
     private InsuranceClaimRepository insuranceClaimRepository;
 
+    // Reusable list of "valid" statuses — ACTIVE + EXPIRING_SOON
+    // EXPIRED employees should not appear in any live report
+    private static final List<InsuranceStatus> LIVE_STATUSES =
+            Arrays.asList(InsuranceStatus.ACTIVE, InsuranceStatus.EXPIRING_SOON);
 
-    // QUERY 1
-    // Employees who have active insurance AND at least one active top-up
- // QUERY 1
+
+    // QUERY 1 — with-topup report
+    // Employees who have ACTIVE or EXPIRING_SOON insurance AND at least one top-up
     @Override
     public List<EmployeeInsuranceResponseDTO> getEmployeesWithInsuranceAndTopUp(int page, int size) {
 
         List<EmployeeInsurance> allRecords = employeeInsuranceRepository
-                .findEmployeesWithActiveInsuranceAndTopUp(
-                    InsuranceStatus.ACTIVE,
-                    InsuranceStatus.ACTIVE
-                );
+                .findEmployeesWithActiveInsuranceAndTopUp(LIVE_STATUSES);
 
-        // calculate start index
         int fromIndex = page * size;
+        if (fromIndex >= allRecords.size()) return new ArrayList<>();
+        int toIndex = Math.min(fromIndex + size, allRecords.size());
 
-        // if page is out of range return empty list
-        if (fromIndex >= allRecords.size()) {
-            return new ArrayList<>();
-        }
-
-        // toIndex should not go beyond list size
-        int toIndex = fromIndex + size;
-        if (toIndex > allRecords.size()) {
-            toIndex = allRecords.size();
-        }
-
-        // cut the list to just this page
-        List<EmployeeInsurance> pageRecords = allRecords.subList(fromIndex, toIndex);
-
-        // map to DTO
         List<EmployeeInsuranceResponseDTO> result = new ArrayList<>();
-        for (EmployeeInsurance ins : pageRecords) {
+        for (EmployeeInsurance ins : allRecords.subList(fromIndex, toIndex)) {
             result.add(mapToInsuranceResponse(ins));
         }
         return result;
     }
 
 
-    // QUERY 2
-    // Employees who have active insurance but NO top-ups at all
+    // QUERY 2 — no-topup report
+    // Employees with ACTIVE or EXPIRING_SOON insurance but NO top-up purchased
     @Override
     public List<EmployeeInsuranceResponseDTO> getEmployeesWithNoTopUp() {
 
+        // Pass LIVE_STATUSES so EXPIRING_SOON employees without top-ups are included
         List<EmployeeInsurance> records = employeeInsuranceRepository
-                .findEmployeesWithInsuranceButNoTopUp(
-                    InsuranceStatus.ACTIVE    // only check ACTIVE insurances
-                );
+                .findEmployeesWithInsuranceButNoTopUp(LIVE_STATUSES);
 
         List<EmployeeInsuranceResponseDTO> result = new ArrayList<>();
         for (EmployeeInsurance ins : records) {
@@ -82,19 +69,15 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
     }
 
 
-    // QUERY 3a
-    // Insurances assigned between any two dates the caller passes
+    // QUERY 3a — assigned-between report
+    // No status filter in the query — all assignments in date range are shown
     @Override
     public List<EmployeeInsuranceResponseDTO> getInsurancesAssignedBetween(
-            LocalDate startDate,
-            LocalDate endDate) {
+            LocalDate startDate, LocalDate endDate) {
 
         List<EmployeeInsurance> records = employeeInsuranceRepository
-                .findInsurancesAssignedBetween(
-                    startDate,
-                    endDate,
-                    InsuranceStatus.ACTIVE
-                );
+                .findInsurancesAssignedBetween(startDate, endDate);
+        // NOTE: only 2 params now — status filter removed from repo query
 
         List<EmployeeInsuranceResponseDTO> result = new ArrayList<>();
         for (EmployeeInsurance ins : records) {
@@ -104,76 +87,51 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
     }
 
 
-    // QUERY 3b
-    // auto-calculates the current Indian financial year
-    // Financial year = April 1 of this year to March 31 of next year
+    // QUERY 3b — current financial year report
+    // Indian FY: April 1 to March 31
+    // If month >= 4 (Apr-Dec), FY started this year. If Jan-Mar, FY started last year.
     @Override
     public List<EmployeeInsuranceResponseDTO> getInsurancesForCurrentFinancialYear() {
 
         LocalDate today = LocalDate.now();
-
-        LocalDate startDate = LocalDate.of(today.getYear(), 4, 1);
-
-        // endDate is March 31 of next year
-        LocalDate endDate = LocalDate.of(today.getYear() + 1, 3, 31);
+        int fyStartYear = (today.getMonthValue() >= 4) ? today.getYear() : today.getYear() - 1;
+        LocalDate startDate = LocalDate.of(fyStartYear, 4, 1);
+        LocalDate endDate   = LocalDate.of(fyStartYear + 1, 3, 31);
 
         return getInsurancesAssignedBetween(startDate, endDate);
     }
 
 
-    // QUERY 4
-    // All pending claims — useful for admin dashboard
+    // QUERY 4 — pending claims report
+    @Override
+    public List<ClaimResponseDTO> getPendingClaims(int page, int size) {
 
- // QUERY 4
- @Override
- public List<ClaimResponseDTO> getPendingClaims(int page, int size) {
+        List<InsuranceClaim> allRecords = insuranceClaimRepository
+                .findAllPendingClaims(ClaimStatus.PENDING);
 
-     List<InsuranceClaim> allRecords = insuranceClaimRepository
-             .findAllPendingClaims(
-                 ClaimStatus.PENDING
-             );
+        int fromIndex = page * size;
+        if (fromIndex >= allRecords.size()) return new ArrayList<>();
+        int toIndex = Math.min(fromIndex + size, allRecords.size());
 
-     // calculate start index
-     int fromIndex = page * size;
-
-     // if page is out of range return empty list
-     if (fromIndex >= allRecords.size()) {
-         return new ArrayList<>();
-     }
-
-     // toIndex should not go beyond list size
-     int toIndex = fromIndex + size;
-     if (toIndex > allRecords.size()) {
-         toIndex = allRecords.size();
-     }
-
-     // cut the list to just this page
-     List<InsuranceClaim> pageRecords = allRecords.subList(fromIndex, toIndex);
-
-     // map to DTO
-     List<ClaimResponseDTO> result = new ArrayList<>();
-     for (InsuranceClaim claim : pageRecords) {
-         result.add(mapToClaimResponse(claim));
-     }
-     return result;
- }
+        List<ClaimResponseDTO> result = new ArrayList<>();
+        for (InsuranceClaim claim : allRecords.subList(fromIndex, toIndex)) {
+            result.add(mapToClaimResponse(claim));
+        }
+        return result;
+    }
 
 
-    // QUERY 5
-    // Insurances expiring within the next N days
-    // caller passes how many days
+    // QUERY 5 — expiring-soon report
+    // Show ACTIVE and EXPIRING_SOON policies expiring within N days
     @Override
     public List<EmployeeInsuranceResponseDTO> getInsurancesExpiringSoon(int days) {
 
-        LocalDate today = LocalDate.now();
-        LocalDate alertDate = today.plusDays(days); // today + 30
+        LocalDate today     = LocalDate.now();
+        LocalDate alertDate = today.plusDays(days);
 
+        // Pass LIVE_STATUSES — EXPIRING_SOON records must show up here
         List<EmployeeInsurance> records = employeeInsuranceRepository
-                .findInsurancesExpiringBetween(
-                    InsuranceStatus.ACTIVE,
-                    today,
-                    alertDate
-                );
+                .findInsurancesExpiringBetween(LIVE_STATUSES, today, alertDate);
 
         List<EmployeeInsuranceResponseDTO> result = new ArrayList<>();
         for (EmployeeInsurance ins : records) {
@@ -183,22 +141,20 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
     }
 
 
-    // MAPPERS
+    // ─── MAPPERS ──────────────────────────────────────────────────────────────
+
     private EmployeeInsuranceResponseDTO mapToInsuranceResponse(EmployeeInsurance ins) {
         EmployeeInsuranceResponseDTO dto = new EmployeeInsuranceResponseDTO();
         dto.setEmployeeInsuranceId(ins.getId());
         dto.setEmployeeId(ins.getEmployee().getUserId());
 
-        // fallback to username if firstName/lastName are blank (same fix as other services)
         String firstName = ins.getEmployee().getFirstName();
         String lastName  = ins.getEmployee().getLastName();
-        String fullName;
-        if (firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank()) {
-            fullName = firstName + " " + lastName;
-        } else {
-            fullName = ins.getEmployee().getUsername();
-        }
-        dto.setEmployeeName(fullName);
+        dto.setEmployeeName(
+            (firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank())
+                ? firstName + " " + lastName
+                : ins.getEmployee().getUsername()
+        );
 
         dto.setPlanName(ins.getInsurancePlan().getPlanName());
         dto.setCoverageAmount(ins.getInsurancePlan().getCoverageAmount());
@@ -216,13 +172,11 @@ public class InsuranceReportServiceImpl implements InsuranceReportService {
 
         String firstName = claim.getEmployee().getFirstName();
         String lastName  = claim.getEmployee().getLastName();
-        String fullName;
-        if (firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank()) {
-            fullName = firstName + " " + lastName;
-        } else {
-            fullName = claim.getEmployee().getUsername();
-        }
-        dto.setEmployeeName(fullName);
+        dto.setEmployeeName(
+            (firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank())
+                ? firstName + " " + lastName
+                : claim.getEmployee().getUsername()
+        );
 
         dto.setEmployeeInsuranceId(claim.getEmployeeInsurance().getId());
         dto.setPlanName(claim.getEmployeeInsurance().getInsurancePlan().getPlanName());

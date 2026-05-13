@@ -102,6 +102,8 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         claim.setReason(dto.getReason());
         claim.setStatus(ClaimStatus.PENDING);
         claim.setRaisedAt(LocalDateTime.now());
+        claim.setClaimAmount(dto.getClaimAmount());
+        claim.setBaseAmount(insurance.getBaseAmount());  
 
         InsuranceClaim saved = insuranceClaimRepository.save(claim);
         return mapToClaimResponse(saved);
@@ -139,22 +141,33 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         claim.setStatus(dto.getStatus());
         claim.setAdminRemarks(dto.getAdminRemarks());
         claim.setResolvedAt(LocalDateTime.now());
-
+        if (dto.getClaimAmount() != null) {
+            claim.setClaimAmount(dto.getClaimAmount());
+        }
+        if (dto.getBaseAmount() != null) {
+            claim.setBaseAmount(dto.getBaseAmount());
+        }
         claim.setResolvedBy(resolvedByUsername);
-
         //    business rule:
         //    remainingCoverage = coverageAmount + topUpCoverage - approvedClaimsTotal
         if (dto.getStatus() == ClaimStatus.APPROVED) {
 
             EmployeeInsurance insurance = claim.getEmployeeInsurance();
-            double newRemaining =
-                insurance.getRemainingCoverage() - claim.getClaimAmount();
+            double newRemaining = insurance.getRemainingCoverage() - claim.getClaimAmount();
 
             if (newRemaining < 0) {
                 newRemaining = 0;
             }
 
             insurance.setRemainingCoverage(newRemaining);
+
+            if (claim.getClaimAmount() != null) {
+                double prevAmt = insurance.getClaimAmount() != null ? insurance.getClaimAmount() : 0.0;
+                insurance.setClaimAmount(claim.getClaimAmount() + prevAmt);
+            } else {
+                insurance.setClaimAmount(0.0);
+            }
+
             employeeInsuranceRepository.save(insurance);
         }
 
@@ -162,7 +175,6 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
 
      // send email notification to employee
         String employeeEmail = claim.getEmployee().getEmail();
-     // In production this would be a dedicated email field
      String employeeName = claim.getEmployee().getFirstName()
              + " " + claim.getEmployee().getLastName();
      String planName = claim.getEmployeeInsurance()
@@ -199,8 +211,6 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
     // ─── GET ALL CLAIMS (ADMIN/HR) ─────────────────────────────────────────────
     @Override
     public List<ClaimResponseDTO> getAllClaims(ClaimStatus status, int page, int size) {
-        // Pageable tells Spring: give me 'size' records starting from 'page'
-        // page 0 = first page, page 1 = second page etc.
         Pageable pageable = PageRequest.of(page, size);
 
         List<InsuranceClaim> claims;
@@ -231,6 +241,7 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         dto.setPlanName(
             claim.getEmployeeInsurance().getInsurancePlan().getPlanName());
         dto.setClaimAmount(claim.getClaimAmount());
+        dto.setBaseAmount(claim.getBaseAmount());
         dto.setReason(claim.getReason());
         dto.setStatus(claim.getStatus());
         dto.setRaisedAt(claim.getRaisedAt());
@@ -238,6 +249,7 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         dto.setResolvedBy(claim.getResolvedBy());
         dto.setAdminRemarks(claim.getAdminRemarks());
         dto.setCreatedAt(claim.getCreatedAt());
+     
         return dto;
     }
 }

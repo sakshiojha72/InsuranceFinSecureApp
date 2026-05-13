@@ -22,4 +22,9 @@ public class ClaimStatusUpdateDTO {
     private String adminRemarks;
 
     private String resolvedBy; 
+    
+    //new requirements (remaining will always be claim+base)
+    private Double claimAmount;
+    
+    private Double baseAmount;
 }

@@ -8,6 +8,7 @@ import com.ds.app.dto.request.ClaimRequestDTO;
 import com.ds.app.dto.request.CreateInsurancePlanRequestDTO;
 import com.ds.app.dto.request.CreateTopUpPlanRequestDTO;
 import com.ds.app.dto.response.ClaimResponseDTO;
+import com.ds.app.dto.response.DeactivatePlanResponseDTO;
 import com.ds.app.dto.response.EmployeeInsuranceResponseDTO;
 import com.ds.app.dto.response.EmployeeTopUpResponseDTO;
 import com.ds.app.dto.response.InsurancePlanResponseDTO;
@@ -23,11 +24,12 @@ public interface InsurancePlanService {
 	public List<InsurancePlanResponseDTO> getAllInsurancePlans();
 	
 	//admin can soft delete a plan ( will set isActive-F)
-	public void deactivateInsurancePlan(Long planId);
+	public DeactivatePlanResponseDTO  deactivateInsurancePlan(Long planId);
 	
 	//admin assign plan to employee
 	public EmployeeInsuranceResponseDTO assignInsurance(AssignInsuranceRequestDTO dto, String assignedBy);
 	
 	public EmployeeInsuranceResponseDTO getEmployeeInsurance(Long employeeId);
-		
+	
+	public InsurancePlanResponseDTO setDefaultPlan(Long planId);
 }

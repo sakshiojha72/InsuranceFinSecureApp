@@ -16,30 +16,30 @@ import com.ds.app.entity.InsuranceClaim;
 @Repository
 public interface InsuranceClaimRepository extends JpaRepository<InsuranceClaim, Long> {
 	//all claims of an emp 
-    List<InsuranceClaim> findByEmployee_UserId(Long employeeId);
+	public List<InsuranceClaim> findByEmployee_UserId(Long employeeId);
 	
 	//get claims categorised on status
-    List<InsuranceClaim> findByStatus(ClaimStatus status);
+	public List<InsuranceClaim> findByStatus(ClaimStatus status);
     
     //to check if emp has a claim open already
-    boolean existsByEmployee_UserIdAndStatus(Long userId, ClaimStatus status);
+	public boolean existsByEmployee_UserIdAndStatus(Long userId, ClaimStatus status);
     
     // find a specific pending claim for an employee
-    Optional<InsuranceClaim> findByEmployee_UserIdAndStatus(Long employeeId, ClaimStatus status);
+	public Optional<InsuranceClaim> findByEmployee_UserIdAndStatus(Long employeeId, ClaimStatus status);
 
     // get all claims raised against a specific insurance 
-    List<InsuranceClaim> findByEmployeeInsurance_Id(Long employeeInsuranceId);
+	public List<InsuranceClaim> findByEmployeeInsurance_Id(Long employeeInsuranceId);
  
 
 	 // Query 4 — pending claims with pagination
 	 @Query("SELECT ic FROM InsuranceClaim ic " +
 	        "WHERE ic.status = :status " +
 	        "ORDER BY ic.raisedAt ASC")
-	 List<InsuranceClaim> findAllPendingClaims(ClaimStatus status);
+	 public List<InsuranceClaim> findAllPendingClaims(ClaimStatus status);
 	 
 	// Used to prevent duplicate claim seeds 
-	 boolean existsByEmployee_UserIdAndEmployeeInsurance_IdAndReason(
+	 public boolean existsByEmployee_UserIdAndEmployeeInsurance_IdAndReason(
 	         Long userId, Long employeeInsuranceId, String reason);
 
-	 List<InsuranceClaim> findByStatus(ClaimStatus status, Pageable pageable);
+	 public List<InsuranceClaim> findByStatus(ClaimStatus status, Pageable pageable);
 }

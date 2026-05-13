@@ -23,6 +23,12 @@ public class EmployeeInsurance {
     @Column(nullable = false)
     private Double remainingCoverage;
     
+    @Column(nullable = true)
+    private Double baseAmount;
+    
+    @Column(nullable = true)
+    private Double ClaimAmount;
+    
     @ManyToOne(fetch = FetchType.LAZY) 
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;

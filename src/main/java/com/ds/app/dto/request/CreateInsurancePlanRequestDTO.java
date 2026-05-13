@@ -18,6 +18,11 @@ public class CreateInsurancePlanRequestDTO {
     @NotNull(message = "Coverage amount is required")
     @Min(value = 1, message = "Coverage amount must be greater than 0")
     private Double coverageAmount;
+    
+    //new requirement
+    private Double baseAmount;
+    
+    private Double claimAmount;
 
     private String description;
 

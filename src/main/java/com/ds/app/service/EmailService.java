@@ -1,21 +1,27 @@
 package com.ds.app.service;
 
+import com.ds.app.controller.AdminController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 // Handles all email notifications for the Insurance Module
-// Uses Spring Boot's built-in JavaMailSender — no third party libraries
+
 @Service
 public class EmailService {
+
+    private final AdminController adminController;
 
     @Autowired
     private JavaMailSender mailSender;
 
+    EmailService(AdminController adminController) {
+        this.adminController = adminController;
+    }
+
     // ── PRIVATE HELPER — sends the actual email ───────────────────────────
-    // All public methods below call this internally
-    // SimpleMailMessage = plain text email, no HTML needed
     private void sendEmail(String toEmail, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
@@ -68,5 +74,30 @@ public class EmailService {
             + "You can raise claims anytime through the FinSecure portal.\n\n"
             + "Regards,\nFinSecure HR Team";
         sendEmail(toEmail, subject, body);
+    }
+    
+ // ─────NEW CHANGES(5TH MAY)───── PLAN DEACTIVATED + AUTO-REASSIGNED ───────────────────────────────────
+    public void sendPlanDeactivatedAndReassignedEmail(
+    		String toEmail,
+    		String employeeName,
+    		String oldPlanName,
+    		String newPlanName,
+    		Double newCoverageAmount,
+    		String newExpiryDate)
+    {
+        String subject = "Your Insurance Plan Has Been Updated — FinSecure";
+        String body = "Dear " + employeeName + ",\n\n"
+            + "Your current insurance plan \"" + oldPlanName + "\" has been deactivated "
+            + "by the administrator.\n\n"
+            + "You have been automatically enrolled in our default plan:\n\n"
+            + "  New Plan Name  : " + newPlanName + "\n"
+            + "  Coverage Amount: ₹" + newCoverageAmount + "\n"
+            + "  Valid Until    : " + newExpiryDate + "\n\n"
+            + "No action is required from your side. Your coverage continues uninterrupted.\n"
+            + "If you have questions about your new plan, please contact HR.\n\n"
+            + "Regards,\nFinSecure HR Team";
+
+        sendEmail(toEmail, subject, body);
+    	
     }
 }

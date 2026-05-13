@@ -32,21 +32,30 @@ public class SecurityConfig{
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
 		 http.csrf(csrf -> csrf.disable());
 
-		 http.cors(cors->cors.disable());
+		 http.cors(cors->{});
 		 
 		 http.authorizeHttpRequests(auth -> auth
 				    .requestMatchers(
-				    	    "/swagger-ui/**",
-				    	    "/swagger-ui.html",
-				    	    "/v3/api-docs/**"
-				    	).permitAll()
+				        "/swagger-ui/**",
+				        "/swagger-ui.html",
+				        "/v3/api-docs/**"
+				    ).permitAll()
+
 				    .requestMatchers("/finsecure/public/**").permitAll()
+
 				    .requestMatchers("/finsecure/admin/**").hasAuthority("ADMIN")
 				    .requestMatchers("/finsecure/hr/**").hasAuthority("HR")
 				    .requestMatchers("/finsecure/finance/**").hasAuthority("FINANCE")
 				    .requestMatchers("/finsecure/system/**").hasAuthority("SYSTEM")
+
+				    // IMPORTANT: this must come BEFORE /finsecure/employee/**
+				    .requestMatchers("/finsecure/employee/employees").hasAnyAuthority("ADMIN", "HR")
+
 				    .requestMatchers("/finsecure/employee/**").hasAuthority("EMPLOYEE")
-				    .requestMatchers("/finsecure/insurance/**").hasAnyAuthority("EMPLOYEE", "ADMIN", "FINANCE", "HR")
+
+				    .requestMatchers("/finsecure/insurance/**")
+				    .hasAnyAuthority("EMPLOYEE", "ADMIN", "FINANCE", "HR")
+
 				    .anyRequest().authenticated()
 				);
 		 

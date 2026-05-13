@@ -9,14 +9,14 @@ import com.ds.app.dto.response.TopUpPlanResponseDTO;
 
 public interface TopUpService {
 	
-	TopUpPlanResponseDTO createTopUpPlan(CreateTopUpPlanRequestDTO dto, String createdBy);
+	public TopUpPlanResponseDTO createTopUpPlan(CreateTopUpPlanRequestDTO dto, String createdBy);
 	
-	List<TopUpPlanResponseDTO> getAllTopUpPlans();
+	public List<TopUpPlanResponseDTO> getAllTopUpPlans();
 	
-	void deactivateTopUpPlan(Long topUpPlanId);
+	public void deactivateTopUpPlan(Long topUpPlanId);
 	
-	EmployeeTopUpResponseDTO buyTopUp( BuyTopUpRequestDTO dto, Long employeeId);
+	public EmployeeTopUpResponseDTO buyTopUp( BuyTopUpRequestDTO dto, Long employeeId);
 	
-	List<EmployeeTopUpResponseDTO> getEmployeeTopUps(Long employeeId);
+	public List<EmployeeTopUpResponseDTO> getEmployeeTopUps(Long employeeId);
 
 }

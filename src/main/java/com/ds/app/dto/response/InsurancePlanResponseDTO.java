@@ -17,4 +17,5 @@ public class InsurancePlanResponseDTO {
     private Boolean isActive;
     private String createdBy;
     private LocalDateTime createdAt;
+    private Boolean isDefault;
 }

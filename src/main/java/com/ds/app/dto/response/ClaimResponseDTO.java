@@ -17,6 +17,7 @@ public class ClaimResponseDTO {
     private Long employeeInsuranceId;
     private String planName;
     private Double claimAmount;
+    private Double baseAmount;
     private String reason;
     private ClaimStatus status;
     private LocalDateTime raisedAt;
